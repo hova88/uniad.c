@@ -1,0 +1,17 @@
+/build/
+/build-*/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.uaw
+*.uaf
+*.pth
+*.pt
+*.ncu-rep
+__pycache__/
+.pytest_cache/
+/benchmarks/*.json
+/docs/screenshots/
+!/tests/fixtures/*.json
