@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="An evidence-bounded C11 synthetic vertical slice of UniAD">
+  <title>UniAD.c — representation flow, made inspectable</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#article">Skip to article</a>
+  <header class="hero">
+    <nav aria-label="Primary"><a class="mark" href="#">UA<span>.c</span></a>
+      <a href="#pipe">Pipeline</a><a href="#evidence">Evidence</a><a href="#inventory">Inventory</a>
+    </nav>
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">A synthetic vertical slice</p>
+        <h1>Representation flow,<br><em>made inspectable.</em></h1>
+        <p class="lede">A bounded C11 graph that follows six camera views through
+          temporal BEV, world heads, and ego planning—without pretending that a
+          tiny seeded demo is the released model.</p>
+        <div class="actions"><a class="button" href="#pipe">Trace the graph</a>
+          <a href="README.md">Read without JavaScript</a></div>
+      </div>
+      <div class="radar" aria-hidden="true"><div class="sweep"></div><i></i><i></i><i></i>
+        <b class="car"></b></div>
+    </div>
+    <div class="claim"><strong>Claim boundary</strong><span>synthetic graph equivalence</span>
+      <span>≠ checkpoint equivalence</span><span>≠ dataset accuracy</span></div>
+  </header>
+
+  <main id="article">
+    <section id="pipe">
+      <div class="section-head"><p class="eyebrow">01 / Tensor pipe</p>
+        <h2>Same shape of thought.<br>Deliberately smaller numbers.</h2></div>
+      <div class="switch" role="group" aria-label="Pipeline profile">
+        <button aria-pressed="true" data-profile="demo">Runnable demo</button>
+        <button aria-pressed="false" data-profile="production">Production contract</button>
+      </div>
+      <ol class="pipeline" id="pipeline">
+        <li><small>Input</small><strong>6 × 3 × 8 × 8</strong><span>procedural camera planes</span></li>
+        <li><small>World memory</small><strong>8 × 8 × 16</strong><span>temporal BEV</span></li>
+        <li><small>Queries</small><strong>64 → top 8</strong><span>stable tracking selection</span></li>
+        <li><small>Future</small><strong>3 × 4</strong><span>motion modes × steps</span></li>
+        <li><small>Action</small><strong>6 points</strong><span>plan + collision score</span></li>
+      </ol>
+    </section>
+
+    <section class="dark" id="residency">
+      <div class="section-head"><p class="eyebrow">02 / Temporal state</p>
+        <h2>One frame remembers.<br>The scene key decides.</h2></div>
+      <div class="residency-grid">
+        <div class="route"><span>frame t−1</span><b>context-owned<br>previous BEV</b>
+          <span class="arrow">scene match → warp</span><b>current BEV</b><span>frame t</span></div>
+        <dl><div><dt>Resident</dt><dd>weights + 4 KiB state</dd></div>
+          <div><dt>Scratch</dt><dd>two bounded BEV buffers</dd></div>
+          <div><dt>Reset</dt><dd>explicit or new scene</dd></div>
+          <div><dt>CPU gate</dt><dd>≤ 256 MiB owned</dd></div></dl>
+      </div>
+    </section>
+
+    <section id="evidence">
+      <div class="section-head"><p class="eyebrow">03 / Correctness funnel</p>
+        <h2>Every claim has<br>a smaller mouth.</h2></div>
+      <div class="funnel" aria-label="Correctness levels">
+        <div><b>Container safety</b><span>magic · bounds · finite · checksum</span></div>
+        <div><b>Operator fixtures</b><span>scalar C ↔ PyTorch</span></div>
+        <div><b>Tiny graph equivalence</b><span>two frames · temporal carry</span></div>
+        <div class="missing"><b>Production equivalence</b><span>missing compatible export</span></div>
+        <div class="missing"><b>Task accuracy</b><span>no dataset or metric claim</span></div>
+      </div>
+    </section>
+
+    <section class="dark" id="visual">
+      <div class="section-head"><p class="eyebrow">04 / Canonical result</p>
+        <h2>One result drives<br>tests and pixels.</h2></div>
+      <div class="viz-grid">
+        <canvas id="bev" width="720" height="520" aria-label="Animated bird's-eye-view result"></canvas>
+        <div class="legend"><p><i class="track-dot"></i> tracked actors</p>
+          <p><i class="motion-line"></i> predicted modes</p>
+          <p><i class="plan-line"></i> ego plan</p>
+          <p id="viz-status">Loading canonical result…</p></div>
+      </div>
+      <noscript><p>The visualization needs JavaScript. The same result schema and
+        explanation remain available in <a href="README.md">the Markdown article</a>.</p></noscript>
+    </section>
+
+    <section id="inventory">
+      <div class="section-head"><p class="eyebrow">05 / Operator inventory</p>
+        <h2>Search the gap<br>between demo and release.</h2></div>
+      <label class="search">Filter operators <input id="filter" type="search"
+        placeholder="attention, motion, CPU…" autocomplete="off"></label>
+      <div class="table-wrap"><table><thead><tr><th>Operator</th><th>Production</th>
+        <th>Demo</th><th>Route</th></tr></thead><tbody id="operators">
+          <tr><td>camera projection</td><td>ResNet-101 + FPN</td><td>weighted scalar projection</td><td>CPU</td></tr>
+          <tr><td>temporal attention</td><td>deformable attention</td><td>scene-keyed carry</td><td>CPU</td></tr>
+        </tbody></table></div>
+    </section>
+  </main>
+  <footer><b>UniAD.c</b><span>Apache-2.0 · synthetic evidence · no remote runtime dependencies</span>
+    <a href="https://github.com/hova88/uniad.c">Source</a></footer>
+  <script src="assets/site.js"></script>
+</body>
+</html>

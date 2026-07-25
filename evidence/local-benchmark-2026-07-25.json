@@ -1,0 +1,35 @@
+{
+  "schema": "uniad.c/local-evidence-v1",
+  "date": "2026-07-25",
+  "host": {
+    "gpu": "NVIDIA GeForce RTX 4060 Ti",
+    "compute_capability": "8.9",
+    "compiler": "Ubuntu cc 11.4.0",
+    "cuda_toolkit": "12.4"
+  },
+  "claim": "synthetic tiny graph only",
+  "notes": [
+    "Times are process-warm wall-clock samples, not a production workload.",
+    "The CUDA route executes the reference graph on CPU and validates an explicit CUDA transfer/kernel boundary; it is not a complete device-resident backend.",
+    "Owned byte counters exclude driver/runtime reserve and caller-owned result/frame storage."
+  ],
+  "cpu": {
+    "runs": 20,
+    "cold_ms": 0.034396,
+    "warm_mean_ms": 0.020718,
+    "owned_host_bytes": 4552,
+    "owned_device_bytes": 0,
+    "h2d_bytes": 0,
+    "d2h_bytes": 0
+  },
+  "cuda_boundary": {
+    "runs": 5,
+    "cold_ms": 0.047891,
+    "warm_mean_ms": 0.023439,
+    "owned_host_bytes": 4552,
+    "owned_device_bytes": 8960,
+    "h2d_bytes": 4608,
+    "d2h_bytes": 1472,
+    "oracle_tolerance": {"atol": 0.0005, "rtol": 0.0005}
+  }
+}
