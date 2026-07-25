@@ -116,10 +116,12 @@
     <section class="essay-section" id="problem" data-section>
       <div class="copy">
         <p class="section-label">01 / The problem</p>
+        <p class="section-question"><span>The opening question</span>If every module is accurate on its own benchmark, why can the final plan still be brittle?</p>
         <h2>Modular systems discard<br>what planning needs most.</h2>
         <p class="lead">A 3D box tells the next module where a car is, but compresses away most of the detector's beliefs about occlusion, context, and uncertainty. Information thins at every discrete interface; independently optimized modules can only pass their errors downstream.</p>
         <p>Conventional multi-task learning reduces duplicated computation, but often shares only an image backbone. Detection, mapping, and prediction still terminate inside separate heads. UniAD asks a more precise question: <em>if safe planning is the final objective, in what form should upstream knowledge remain available downstream?</em></p>
         <p>The answer is the query. It is not a final prediction, but a 256-dimensional state with a wide receptive field that attention can continue to update. Agents, maps, and ego intent become queries; space and risk remain dense BEV fields. “What is visible,” “how it may move,” and “where it is unsafe to go” are no longer three unrelated answers.</p>
+        <p class="answer"><span>Answer 01</span>The failure is not only inaccurate modules. It is a lossy contract between them. UniAD keeps sparse beliefs and dense spatial evidence alive long enough for planning to interrogate both.</p>
       </div>
       <aside class="margin-note">
         <b>Not opaque end-to-end control</b>
@@ -148,9 +150,11 @@
     <section class="essay-section" id="system" data-section>
       <div class="copy">
         <p class="section-label">02 / System anatomy</p>
+        <p class="section-question"><span>Next question</span>If queries are the language, who speaks to whom—and which information bypasses the conversation?</p>
         <h2>Six tasks relay<br>one frame forward.</h2>
         <p>At inference, six cameras first produce multi-scale image features; a BEV encoder transforms perspective views into a common ego-centric frame. TrackFormer and MapFormer read dynamic agents and static roads from the same BEV. MotionFormer jointly forecasts every participant, OccFormer projects those futures back into a dense grid, and Planner emits six waypoints.</p>
         <p>It resembles a line but is actually a skip-connected directed graph. MapFormer does not enter Planner directly, yet changes ego intent through MotionFormer. MotionFormer emits both an ego query and agent dynamics for OccFormer. The original BEV bypasses every sparse decoder and remains directly available to Planner.</p>
+        <p class="answer"><span>Answer 02</span>There is no single relay baton. Sparse queries carry identity and intent; dense BEV carries geometry and risk. Planner deliberately receives both.</p>
       </div>
       <aside class="margin-note metric-note">
         <b>Released configuration</b>
@@ -173,8 +177,18 @@
         </div>
         <div class="system-stage" id="system-stage"></div>
         <div class="system-explanation">
-          <code id="system-shape">6 × 4 feature levels</code>
+          <div><small>Output contract</small><code id="system-shape">6 × 4 feature levels</code></div>
           <p id="system-copy">ResNet-101 and FPN turn six BGR views into four 256-channel feature scales.</p>
+        </div>
+        <dl class="system-ledger" aria-live="polite">
+          <div><dt>Reads</dt><dd id="system-reads">six synchronized camera images</dd></div>
+          <div><dt>Preserves</dt><dd id="system-preserves">appearance at four spatial scales</dd></div>
+          <div><dt>Still missing</dt><dd id="system-missing">metric position and temporal identity</dd></div>
+          <div><dt>Consumed by</dt><dd id="system-consumer">BEVFormer spatial cross-attention</dd></div>
+        </dl>
+        <div class="figure-prompt">
+          <b id="system-prompt">Why not plan from image features?</b>
+          <p id="system-answer">A pixel displacement has no fixed metric meaning across cameras or depth. The next stage must establish a common coordinate frame.</p>
         </div>
       </div>
     </section>
@@ -182,6 +196,7 @@
     <section class="essay-section" id="bev" data-section>
       <div class="copy">
         <p class="section-label">03 / The coordinate machine</p>
+        <p class="section-question"><span>The coordinate problem</span>How can a query ask “what is 18 meters ahead” when every camera measures only pixels?</p>
         <h2>BEV is not just a feature map.<br>It is the shared coordinate system.</h2>
         <p class="lead">Cameras see perspective projections; planning needs “18 meters forward, 2 meters left.” The BEVFormer encoder organizes evidence from six views into a <code>200 × 200 × 256</code> ego-centric grid.</p>
         <p>Every BEV query corresponds to a location on the ground plane. Spatial Cross-Attention uses camera calibration to project reference points into cameras that can see them, then samples valid positions from four image-pyramid levels. Temporal Self-Attention reads the previous BEV after ego-motion alignment. The released configuration repeats both operations across six encoder layers.</p>
@@ -191,6 +206,7 @@
           <span>Enc(Q<sub>bev</sub>, F<sub>cam</sub>, Align(B<sub>t−1</sub>, Δpose))</span>
         </div>
         <p>“Temporal” therefore involves two operations: align the past using CAN-bus translation and rotation, then attend between current and past queries. Without alignment, forward ego motion would look like the entire world moving backward.</p>
+        <p class="answer"><span>Answer 03</span>BEV turns six incompatible image planes into one metric memory. Calibration answers where to sample; ego-motion alignment answers where the previous evidence moved.</p>
       </div>
       <aside class="margin-note">
         <b>Spatial extent</b>
@@ -216,9 +232,11 @@
     <section class="essay-section" id="queries" data-section>
       <div class="copy">
         <p class="section-label">04 / TrackFormer</p>
+        <p class="section-question"><span>The identity problem</span>If detections are recomputed every frame, what prevents the same car from becoming a new object every 500 milliseconds?</p>
         <h2>The life of a track query.</h2>
         <p>TrackFormer solves detection and tracking together. Each frame receives fresh detection queries that search for first-time objects, while surviving track queries continue to model the same objects from the previous frame. Both read BEV, but identity is assigned differently.</p>
         <p>A newborn query is paired with ground truth through Hungarian matching. An existing track query is not rematched; it inherits its previous ground-truth index. That inheritance is the source of identity continuity. After six decoder layers, a dynamic set of valid states forms <code>Q_A ∈ R<sup>Na×256</sup></code> and enters MotionFormer.</p>
+        <p class="answer"><span>Answer 04</span>Identity lives in query state, not in post-hoc box matching. Only newborns need assignment; surviving tracks carry their assignment across frames.</p>
       </div>
       <aside class="margin-note">
         <b>Two thresholds</b>
@@ -244,10 +262,12 @@
     <section class="essay-section" id="map" data-section>
       <div class="copy">
         <p class="section-label">05 / MapFormer</p>
+        <p class="section-question"><span>The geometry problem</span>A car is moving forward. Is that motion legal, likely, or already leaving the road?</p>
         <h2>The map is not a backdrop.<br>It constrains motion.</h2>
         <p class="lead">If MotionFormer knows only agents, it can extrapolate velocity but cannot know whether the space ahead is a lane, an intersection, or off-road. MapFormer turns road geometry into queries so agent–map interaction happens in feature space.</p>
         <p>Adapted from Panoptic SegFormer, it divides the map into <em>things</em> and <em>stuff</em>. Three hundred thing queries represent instances such as lanes, boundaries, and pedestrian crossings; one class-fixed stuff query represents drivable area. Six location-decoder layers place elements, while mask decoders recover shape.</p>
         <p>Every layer is supervised, but only final-layer thing queries <code>Q_M</code> enter MotionFormer. Map masks are outputs for humans and metrics; map queries are the interface consumed by downstream prediction.</p>
+        <p class="answer"><span>Answer 05</span>Velocity cannot decide. Map queries add lane topology, boundaries, crossings, and drivable surface before a trajectory is chosen.</p>
       </div>
       <aside class="margin-note">
         <b>Online map ≠ HD map</b>
@@ -279,6 +299,7 @@
     <section class="essay-section" id="motion" data-section>
       <div class="copy">
         <p class="section-label">06 / MotionFormer</p>
+        <p class="section-question"><span>The forecasting problem</span>Why is extrapolating each agent independently wrong even when its current velocity is known?</p>
         <h2>The subject of prediction<br>is interaction, not trajectory.</h2>
         <p>MotionFormer maintains six modes per agent, each predicting twelve future points. These futures are not regressed from scratch. Training trajectories are grouped by class and clustered with k-means into local agent-level anchors, then rotated and translated by the current agent pose into scene-level anchors.</p>
         <p>Every motion query has context and position components. Position is not one point but the sum of four priors:</p>
@@ -287,6 +308,7 @@
           <span>φ(I<sup>scene</sup>) + φ(I<sup>agent</sup>) + φ(x̂<sub>0</sub>) + φ(x̂<sub>T</sub><sup>l−1</sup>)</span>
         </div>
         <p>The first two terms encode dataset motion priors, the third binds the query to its current agent, and the fourth is the endpoint predicted by the previous layer. Each decoder layer therefore updates the goal and re-examines the environment around that new endpoint.</p>
+        <p class="answer"><span>Answer 06</span>A future is conditional: on other agents, on road geometry, and on evidence near the intended endpoint. MotionFormer computes all three conditions in parallel at every decoder layer.</p>
       </div>
       <aside class="margin-note">
         <b>Scene-centric</b>
@@ -297,6 +319,7 @@
           <span>Q<sub>i,k</sub><small>agent i · mode k</small></span>
         </div>
         <div class="interaction-tabs" role="tablist" aria-label="MotionFormer interaction types">
+          <span>Focus one parallel branch</span>
           <button data-interaction="agent" aria-selected="true">Agent ↔ Agent</button>
           <button data-interaction="map" aria-selected="false">Agent ↔ Map</button>
           <button data-interaction="goal" aria-selected="false">Agent ↔ Goal</button>
@@ -316,11 +339,13 @@
     <section class="essay-section" id="occupancy" data-section>
       <div class="copy">
         <p class="section-label">07 / OccFormer</p>
+        <p class="section-question"><span>The safety problem</span>Trajectories say where recognized agents may go. What lets Planner ask whether one particular future cell is safe?</p>
         <h2>Write sparse participants<br>back into a dense future.</h2>
         <p class="lead">Trajectories describe agents that have already been recognized and associated. Planning asks a different question: will a future cell be safe to occupy? OccFormer combines agent identity with dense scene state, producing both instance-level occupancy and a merged risk field.</p>
         <p>First, six motion modes are max-pooled over the mode dimension to form <code>Q_X</code>. It is concatenated with track query <code>Q_A</code> and position embedding <code>P_A</code>, then passed through a timestep-specific MLP to create agent feature <code>G<sup>t</sup></code>.</p>
         <div class="equation"><span>G<sup>t</sup></span><i>=</i><span>MLP<sub>t</sub>([Q<sub>A</sub>, P<sub>A</sub>, max<sub>k</sub> Q<sub>motion</sub>])</span></div>
         <p>Meanwhile, BEV is downsampled to 1/4 resolution; each temporal block goes to 1/8 resolution for pixel–agent interaction. The roles are reversed from a conventional object decoder: dense pixels are queries, while agent features are keys and values. A coarse instance mask restricts each pixel to its corresponding agent.</p>
+        <p class="answer"><span>Answer 07</span>OccFormer projects identity-aware sparse futures back into a dense field. Each cell can carry risk without forcing Planner to enumerate objects.</p>
       </div>
       <aside class="margin-note">
         <b>Time horizon</b>
@@ -345,6 +370,14 @@
           <label for="occ-time">Unroll the future <output id="occ-time-label">t + 2</output></label>
           <input id="occ-time" type="range" min="0" max="4" value="2">
         </div>
+        <dl class="occ-ledger" aria-live="polite">
+          <div><dt>Temporal block</dt><dd id="occ-block-readout">3 / 5</dd></div>
+          <div><dt>Dense input</dt><dd id="occ-input-readout">F¹ at 1/4 resolution</dd></div>
+          <div><dt>Agent state</dt><dd id="occ-agent-readout">G² from the timestep-specific MLP</dd></div>
+          <div><dt>Attention roles</dt><dd>pixels query · agents key/value</dd></div>
+          <div><dt>Coarse mask</dt><dd id="occ-mask-readout">attention constraint + auxiliary Ô²</dd></div>
+          <div><dt>Dense output</dt><dd id="occ-output-readout">F² with identity-conditioned future evidence</dd></div>
+        </dl>
         <figcaption><span>Figure 7</span><b>Inside one OccFormer block.</b> The coarse mask serves as both an attention constraint and an auxiliary prediction. Final instance occupancy is the dot product of agent occupancy features and full-resolution dense features.</figcaption>
       </figure>
     </section>
@@ -352,12 +385,14 @@
     <section class="essay-section" id="planning" data-section>
       <div class="copy">
         <p class="section-label">08 / Planner</p>
+        <p class="section-question"><span>The decision problem</span>Once perception and prediction agree on the world, how does intent become six safe coordinates?</p>
         <h2>Six points inherit<br>every earlier representation.</h2>
         <p>Planner does not concatenate every task's decoded output. It reads three condensed representations: TrackFormer's ego query, MotionFormer's six ego motion queries, and one of three command embeddings—left, right, or forward. MLP encoding and max-pooling across modes produce one plan query.</p>
         <p>That query cross-attends the full BEV through a three-layer transformer decoder. An MLP then regresses six 2D increments and cumulatively sums them into a three-second path. Sparse intent has now read the dense world again.</p>
         <div class="equation stacked">
           <span>Q<sub>plan</sub></span><i>=</i><span>max<sub>mode</sub> MLP([Q<sub>ego-track</sub>, Q<sub>ego-motion</sub>, E<sub>command</sub>])</span>
         </div>
+        <p class="answer"><span>Answer 08</span>The command chooses a maneuver family, ego queries encode intent, BEV supplies scene context, and time-aligned occupancy can bend the learned reference away from risk.</p>
       </div>
       <aside class="margin-note">
         <b>Training vs. inference</b>
@@ -385,6 +420,12 @@
           <i>+</i>
           <b>Σ GaussianDistance(τ<sub>t</sub>, Ô<sup>t</sup>)</b>
         </div>
+        <div class="planner-ledger" aria-live="polite">
+          <p><span>Reference deviation</span><b id="planner-reference-cost">—</b></p>
+          <p><span>Occupancy penalty</span><b id="planner-obstacle-cost">—</b></p>
+          <p><span>Closest clearance</span><b id="planner-clearance">—</b></p>
+          <p><span>Interpretation</span><b id="planner-interpretation">—</b></p>
+        </div>
         <figcaption><span>Figure 8</span><b>The occupancy-aware optimizer used at inference.</b> The first term pulls the path toward the learned reference; the second pushes each future waypoint away from occupied cells at the corresponding time. Toggle the command and optimization switch to separate their roles.</figcaption>
       </figure>
       <div class="copy">
@@ -396,8 +437,10 @@
     <section class="essay-section" id="training" data-section>
       <div class="copy">
         <p class="section-label">09 / Learning</p>
+        <p class="section-question"><span>The optimization problem</span>If the architecture is unified, why not train every module from random initialization in one pass?</p>
         <h2>Unified training,<br>but not all at once.</h2>
         <p class="lead">The full graph has 125 million parameters and multiple sequence-heavy tasks. UniAD stabilizes optimization with two training stages and deliberately freezes its most expensive image and BEV components.</p>
+        <p class="answer"><span>Answer 09</span>Shared gradients are useful only after the coordinate system and sparse interfaces become stable. Stage 1 establishes perception; Stage 2 makes downstream objectives negotiate over those representations.</p>
       </div>
       <figure class="wide-figure training-figure">
         <div class="training-phase">
@@ -429,9 +472,11 @@
     <section class="essay-section" id="evidence" data-section>
       <div class="copy">
         <p class="section-label">10 / What the evidence says</p>
+        <p class="section-question"><span>The scientific question</span>How do we know the query chain contributes information rather than merely adding parameters?</p>
         <h2>What evidence supports<br>the unified design?</h2>
         <p>The most informative ablation is not the final leaderboard, but the dependency graph. Motion prediction improves with agent perception alone; adding the online map reduces minADE and minFDE further. OccFormer benefits from tracking and motion features beyond dense BEV. BEV attention, collision loss, and occupancy optimization each improve Planner.</p>
         <p>The query chain is therefore more than code reuse. Each upstream task contributes structure a downstream task can exploit: maps constrain feasible motion, motion features help occupancy separate future instances, and occupancy provides planning with a class-agnostic safety surface.</p>
+        <p class="answer"><span>Answer 10</span>Ablations improve along the same dependency edges the architecture claims: map helps motion, motion helps occupancy, and occupancy-aware mechanisms help planning. The evidence is directional—not proof that every added parameter is equally valuable.</p>
       </div>
       <aside class="margin-note">
         <b>Metric conditions</b>
@@ -460,8 +505,10 @@
     <section class="essay-section" id="runtime" data-section>
       <div class="copy">
         <p class="section-label">11 / UniAD.c</p>
+        <p class="section-question"><span>The evidence problem</span>What can this repository actually prove—and can the reader inspect the exact result rather than trust a decorative rendering?</p>
         <h2>What remains,<br>and what is deliberately absent.</h2>
         <p class="lead">The C11 program in this repository is a representation-flow vertical slice, not a port of the released checkpoint. It reduces every tensor and uses deterministic scalar operators so state lifetime, input containers, and the result schema remain auditable.</p>
+        <p class="answer"><span>Answer 11</span>It can prove a deterministic data contract and oracle agreement for the tiny graph. Figure 11 exposes the canonical record—including its awkward synthetic geometry—instead of pretending it is production output.</p>
       </div>
       <div class="wide-figure contract-toggle">
         <div class="contract-controls" role="group" aria-label="Runtime profiles">
@@ -470,6 +517,12 @@
         </div>
         <div class="contract-flow" id="contract-flow"></div>
         <p id="contract-note">Fixed capacities, seeded weights, and no remote dependencies; executable against an independent PyTorch oracle.</p>
+        <dl class="contract-evidence" aria-live="polite">
+          <div><dt>Runnable here?</dt><dd id="contract-runnable">yes · CPU and optional CUDA marker path</dd></div>
+          <div><dt>Weights</dt><dd id="contract-weights">seed-derived synthetic container</dd></div>
+          <div><dt>Strongest proof</dt><dd id="contract-proof">two-frame agreement with an independent PyTorch oracle</dd></div>
+          <div><dt>Why this boundary?</dt><dd id="contract-boundary">operator and checkpoint coverage stop before production equivalence</dd></div>
+        </dl>
       </div>
       <div class="copy">
         <h3>The actual path through <code>ua_infer</code></h3>
@@ -486,21 +539,68 @@
         <p>No ResNet/FPN, BEVFormer, deformable attention, query lifecycle, learned anchors, real OccFormer, checkpoint mapping, or official evaluator.</p>
       </aside>
       <figure class="wide-figure canonical-figure">
-        <canvas id="canonical-canvas" width="1120" height="600" aria-label="UniAD.c canonical result"></canvas>
-        <div class="canonical-readout">
-          <p><span>frame</span><b id="frame-readout">—</b></p>
-          <p><span>tracks</span><b id="tracks-readout">—</b></p>
-          <p><span>collision</span><b id="collision-readout">—</b></p>
+        <header class="canonical-header">
+          <div>
+            <span>Canonical record explorer</span>
+            <b id="canonical-scene">loading demo-result.json…</b>
+          </div>
+          <div class="canonical-readout">
+            <p><span>frame</span><b id="frame-readout">—</b></p>
+            <p><span>tracks</span><b id="tracks-readout">—</b></p>
+            <p><span>collision</span><b id="collision-readout">—</b></p>
+          </div>
+        </header>
+        <div class="canonical-workbench">
+          <div class="canonical-controls">
+            <fieldset>
+              <legend>Layers from the JSON record</legend>
+              <label><input type="checkbox" data-canonical-layer="map" checked> map <small>4 polylines</small></label>
+              <label><input type="checkbox" data-canonical-layer="occupancy" checked> occupancy <small>8 × 8 binary</small></label>
+              <label><input type="checkbox" data-canonical-layer="tracks" checked> tracks <small>top 8</small></label>
+              <label><input type="checkbox" data-canonical-layer="motion" checked> motion <small>3 × 4 / track</small></label>
+              <label><input type="checkbox" data-canonical-layer="plan" checked> ego plan <small>6 waypoints</small></label>
+            </fieldset>
+            <div class="canonical-slider">
+              <label for="canonical-time">Future step <output id="canonical-time-label">3 / 4</output></label>
+              <input id="canonical-time" type="range" min="0" max="3" value="3">
+            </div>
+            <div class="canonical-modes" role="group" aria-label="Motion mode">
+              <span>Motion mode</span>
+              <button data-canonical-mode="0" aria-pressed="true">0</button>
+              <button data-canonical-mode="1" aria-pressed="false">1</button>
+              <button data-canonical-mode="2" aria-pressed="false">2</button>
+            </div>
+            <p class="canonical-hint">Select a track in the plot to inspect its exact source values.</p>
+          </div>
+          <canvas id="canonical-canvas" width="860" height="680" aria-label="Interactive plot of the UniAD.c canonical JSON result"></canvas>
+          <aside class="canonical-inspector" aria-live="polite">
+            <span id="inspector-kind">Record</span>
+            <h3 id="inspector-title">No track selected</h3>
+            <dl id="inspector-values">
+              <div><dt>schema</dt><dd>uniad.c/result-v1</dd></div>
+              <div><dt>frame</dt><dd>ego</dd></div>
+              <div><dt>distance</dt><dd>meter</dd></div>
+            </dl>
+            <p id="inspector-note">The viewport is fixed to x ∈ [−4.5, 4.5] m and y ∈ [−4.5, 5.0] m so negative-y tracks remain visible.</p>
+          </aside>
         </div>
-        <figcaption><span>Figure 11</span><b>The page and tests read the same canonical JSON.</b> Orange marks tracks, blue shows multimodal motion, and yellow shows the ego plan. This is a synthetic evidence plot, not a nuScenes scene.</figcaption>
+        <div class="canonical-lineage">
+          <span><b>01</b><code>ua_result_write_json</code></span>
+          <i>→</i><span><b>02</b><code>demo-result.json</code></span>
+          <i>→</i><span><b>03</b><code>tests/test_cli.py</code></span>
+          <i>→</i><span><b>04</b>this canvas</span>
+        </div>
+        <figcaption><span>Figure 11</span><b>An inspectable record, not a decorative scene.</b> Every primitive is read from the canonical JSON: gray map lines, red occupancy cells, orange tracks, blue selected-mode trajectories, and the yellow ego plan. The fixed ego-frame viewport exposes both negative-y synthetic tracks and positive-y waypoints. Toggle layers to isolate each result field; select a track to report its score, coordinates, mode probability, and future endpoint.</figcaption>
       </figure>
     </section>
 
     <section class="essay-section" id="limits" data-section>
       <div class="copy">
         <p class="section-label">12 / Correctness ladder</p>
+        <p class="section-question"><span>The final question</span>When does “the demo runs” become evidence that the production model has been reproduced?</p>
         <h2>Evidence climbs one rung<br>at a time.</h2>
         <p>The repository can establish safe container parsing, basic-operator agreement with an oracle, and correct temporal carry in a two-frame synthetic graph. None of those facts implies production-checkpoint equivalence or task accuracy on nuScenes.</p>
+        <p class="answer"><span>Answer 12</span>Only after export, operator coverage, tensor-by-tensor checkpoint comparison, and dataset evaluation. This repository intentionally stops three rungs earlier.</p>
       </div>
       <div class="wide-figure proof-ladder">
         <div class="proved"><span>01</span><b>Container safety</b><i>proved</i><p>magic · shape · finite · checksum</p></div>
