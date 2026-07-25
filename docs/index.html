@@ -127,23 +127,34 @@
         <b>Not opaque end-to-end control</b>
         <p>UniAD preserves explicit supervision for detection, mapping, trajectories, and occupancy. It unifies differentiable representations and objectives; it does not hide every intermediate task.</p>
       </aside>
-      <figure class="wide-figure paradigm-figure">
-        <div class="paradigm">
-          <p><span>A</span>Modular pipeline</p>
-          <div class="boxes"><i>Perceive</i><b>box</b><i>Predict</i><b>path</b><i>Plan</i></div>
-          <small>Each interface compresses a feature into a result</small>
+      <figure class="wide-figure explainer interface-explainer" style="--signal: 1">
+        <header class="explainer-head">
+          <p><span>Try it</span>How much survives the interface?</p>
+          <small>Drag from a decoded result toward a living query.</small>
+        </header>
+        <div class="interface-scene">
+          <div class="observed-agent">
+            <i></i><b>observed agent</b><small>the detector knows more than a box</small>
+          </div>
+          <div class="signal-packet" aria-live="polite">
+            <span class="signal-core">box<br><b>x · y · w · h</b></span>
+            <span class="signal-detail d1">heading</span>
+            <span class="signal-detail d2">occlusion</span>
+            <span class="signal-detail d3">neighbor context</span>
+            <span class="signal-detail d4">appearance</span>
+            <span class="signal-detail d5">uncertainty</span>
+            <i class="interface-gate"></i>
+          </div>
+          <div class="receiving-planner">
+            <i></i><b>downstream task</b><small id="interface-received">box + five latent beliefs</small>
+          </div>
         </div>
-        <div class="paradigm">
-          <p><span>B</span>Parallel multi-task</p>
-          <div class="fork"><i>Shared backbone</i><span><b>Track</b><b>Map</b><b>Motion</b></span></div>
-          <small>Tasks share pixels, but not intermediate language</small>
+        <div class="direct-control">
+          <label for="interface-aperture"><span>decoded result</span><b>representation bandwidth</b><span>living query</span></label>
+          <input id="interface-aperture" type="range" min="0" max="5" value="5" step="1">
         </div>
-        <div class="paradigm selected">
-          <p><span>C</span>UniAD</p>
-          <div class="boxes"><i>BEV</i><b>Q<sub>A</sub></b><i>Motion</i><b>Q<sub>ctx</sub></b><i>Plan</i></div>
-          <small>Intermediate states remain learnable and transferable</small>
-        </div>
-        <figcaption><span>Figure 2</span><b>The difference is at the interface.</b> UniAD does not remove modules. It lets them exchange queries instead of only decoded geometry.</figcaption>
+        <div class="explainer-takeaway"><span>Notice</span><p id="interface-takeaway">A query preserves the box and the beliefs that produced it, so downstream attention can still revise the interpretation.</p></div>
+        <figcaption><span>Figure 2</span><b>The difference is at the interface.</b> Narrowing the contract leaves location intact while progressively discarding uncertainty and context. UniAD keeps the intermediate state available instead of passing only decoded geometry.</figcaption>
       </figure>
     </section>
 
@@ -167,29 +178,38 @@
           <div><dt>plan</dt><dd>6 points</dd></div>
         </dl>
       </aside>
-      <div class="wide-figure system-strip" role="group" aria-label="Step through the UniAD system">
-        <div class="system-controls">
-          <button data-system-step="0" aria-pressed="true">Image</button>
-          <button data-system-step="1" aria-pressed="false">World</button>
-          <button data-system-step="2" aria-pressed="false">Entities</button>
-          <button data-system-step="3" aria-pressed="false">Future</button>
-          <button data-system-step="4" aria-pressed="false">Action</button>
+      <div class="wide-figure explainer architecture-explainer" role="group" aria-label="Inspect the UniAD dependency graph">
+        <header class="explainer-head">
+          <p><span>Trace it</span>Which representations reach this module?</p>
+          <small>Select a module in the graph; the scene never changes.</small>
+        </header>
+        <div class="architecture-map" id="architecture-map">
+          <svg viewBox="0 0 1000 430" aria-hidden="true">
+            <path data-arch-edge="camera-bev" d="M130 215H270"/>
+            <path data-arch-edge="bev-track" d="M390 205C445 205 425 105 490 105"/>
+            <path data-arch-edge="bev-map" d="M390 225C445 225 425 325 490 325"/>
+            <path data-arch-edge="track-motion" d="M610 105H700"/>
+            <path data-arch-edge="map-motion" d="M610 325C665 325 640 125 700 125"/>
+            <path data-arch-edge="motion-occ" d="M760 155V285"/>
+            <path data-arch-edge="bev-occ" d="M390 235C520 235 520 325 700 325"/>
+            <path data-arch-edge="motion-plan" d="M820 105C885 105 850 205 900 205"/>
+            <path data-arch-edge="occ-plan" d="M820 325C885 325 850 225 900 225"/>
+            <path data-arch-edge="bev-plan" d="M390 215H900"/>
+          </svg>
+          <button class="arch-node camera" data-arch-node="camera"><span>01</span><b>Cameras</b><small>perspective evidence</small></button>
+          <button class="arch-node bev" data-arch-node="bev"><span>02</span><b>BEV</b><small>dense metric memory</small></button>
+          <button class="arch-node track" data-arch-node="track"><span>03a</span><b>Track</b><small>agent identity</small></button>
+          <button class="arch-node map" data-arch-node="map"><span>03b</span><b>Map</b><small>road instances</small></button>
+          <button class="arch-node motion" data-arch-node="motion"><span>04a</span><b>Motion</b><small>multimodal futures</small></button>
+          <button class="arch-node occ" data-arch-node="occ"><span>04b</span><b>Occupancy</b><small>dense future risk</small></button>
+          <button class="arch-node planner" data-arch-node="planner"><span>05</span><b>Planner</b><small>six waypoints</small></button>
         </div>
-        <div class="system-stage" id="system-stage"></div>
-        <div class="system-explanation">
-          <div><small>Output contract</small><code id="system-shape">6 × 4 feature levels</code></div>
-          <p id="system-copy">ResNet-101 and FPN turn six BGR views into four 256-channel feature scales.</p>
+        <div class="architecture-reading" aria-live="polite">
+          <p><span id="arch-kind">Selected module</span><b id="arch-title">Planner</b></p>
+          <p><small>Reads</small><b id="arch-reads">ego query · motion · BEV · occupancy · command</b></p>
+          <p><small>Why it matters</small><b id="arch-insight">The sparse intent path and dense risk path meet here.</b></p>
         </div>
-        <dl class="system-ledger" aria-live="polite">
-          <div><dt>Reads</dt><dd id="system-reads">six synchronized camera images</dd></div>
-          <div><dt>Preserves</dt><dd id="system-preserves">appearance at four spatial scales</dd></div>
-          <div><dt>Still missing</dt><dd id="system-missing">metric position and temporal identity</dd></div>
-          <div><dt>Consumed by</dt><dd id="system-consumer">BEVFormer spatial cross-attention</dd></div>
-        </dl>
-        <div class="figure-prompt">
-          <b id="system-prompt">Why not plan from image features?</b>
-          <p id="system-answer">A pixel displacement has no fixed metric meaning across cameras or depth. The next stage must establish a common coordinate frame.</p>
-        </div>
+        <div class="explainer-takeaway"><span>Notice</span><p>The highlighted paths are data dependencies, not a decorative execution sequence. BEV bypasses every sparse decoder and reaches Planner directly.</p></div>
       </div>
     </section>
 
@@ -212,20 +232,29 @@
         <b>Spatial extent</b>
         <p>The paper describes roughly <code>[-51.2m, 51.2m]</code>. The occupancy head uses 0.5m cells over <code>[-50m, 50m]</code>. Sampling boundaries are not identical across heads.</p>
       </aside>
-      <figure class="wide-figure bev-figure">
-        <div class="perspective-stack">
-          <span>front left</span><span>front</span><span>front right</span>
-          <span>back left</span><span>back</span><span>back right</span>
+      <figure class="wide-figure explainer alignment-explainer">
+        <header class="explainer-head">
+          <p><span>Align it</span>Why can’t temporal attention compare the two grids immediately?</p>
+          <small>Compensate for ego motion until the ghost actors overlap.</small>
+        </header>
+        <div class="alignment-scene" id="alignment-scene" style="--align-x: 0px; --align-y: 0px">
+          <div class="alignment-grid current">
+            <span>current BEV · t</span>
+            <i class="actor a1"></i><i class="actor a2"></i><i class="actor a3"></i>
+          </div>
+          <div class="alignment-grid previous">
+            <span>previous BEV · t−1</span>
+            <i class="actor a1"></i><i class="actor a2"></i><i class="actor a3"></i>
+          </div>
+          <div class="ego-motion-vector"><i></i><span>Δ ego pose</span></div>
+          <output id="alignment-score">0% registered</output>
         </div>
-        <div class="projection-rays"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="bev-surface">
-          <div class="bev-query q1">q<sub>137</sub></div><div class="bev-query q2">q<sub>421</sub></div><div class="bev-query q3">q<sub>808</sub></div>
-          <span class="axis-x">x</span><span class="axis-y">y</span>
+        <div class="direct-control">
+          <label for="alignment-control"><span>raw previous BEV</span><b>ego-motion compensation</b><span>aligned</span></label>
+          <input id="alignment-control" type="range" min="0" max="100" value="0">
         </div>
-        <div class="temporal-inset">
-          <div><small>t−1</small><i></i><i></i></div><b>rotate + shift</b><div><small>aligned</small><i></i><i></i></div>
-        </div>
-        <figcaption><span>Figure 3</span><b>From perspective evidence to a shared world state.</b> Spatial attention samples only cameras that can observe a reference point; the previous BEV is ego-motion aligned before temporal attention.</figcaption>
+        <div class="explainer-takeaway"><span id="alignment-state">Misregistered</span><p id="alignment-takeaway">The same stationary actor occupies different cells because the ego vehicle moved between frames.</p></div>
+        <figcaption><span>Figure 3</span><b>Temporal attention needs a geometric precondition.</b> The translucent previous grid remains visible as a baseline. Alignment removes apparent world motion before the encoder compares current and past evidence.</figcaption>
       </figure>
     </section>
 
@@ -242,16 +271,29 @@
         <b>Two thresholds</b>
         <p>At inference, newborn detection queries use 0.4 and track queries use 0.35. A low-scoring track is not immediately deleted; its lifecycle ends only after roughly two continuous seconds below threshold.</p>
       </aside>
-      <figure class="wide-figure lifecycle-figure">
-        <div class="lifecycle-view" id="lifecycle-view" aria-live="polite"></div>
-        <div class="lifecycle-controls" role="group" aria-label="Track query lifecycle">
-          <button data-life="0" aria-pressed="true"><span>01</span>Discover</button>
-          <button data-life="1" aria-pressed="false"><span>02</span>Match</button>
-          <button data-life="2" aria-pressed="false"><span>03</span>Carry</button>
-          <button data-life="3" aria-pressed="false"><span>04</span>Occlude</button>
-          <button data-life="4" aria-pressed="false"><span>05</span>Remove</button>
+      <figure class="wide-figure explainer track-explainer">
+        <header class="explainer-head">
+          <p><span>Follow it</span>What survives when the car disappears?</p>
+          <small>Scrub one identity across five consecutive frames.</small>
+        </header>
+        <div class="track-scene" id="track-scene">
+          <div class="track-road"><i></i></div>
+          <div class="tracked-car" id="tracked-car"><b>#17</b></div>
+          <div class="query-token" id="query-token">q<sub>17</sub></div>
+          <div class="occluder">occluder</div>
+          <div class="track-status">
+            <p><small>visibility</small><b id="track-visibility">visible</b></p>
+            <p><small>score</small><b id="track-score">0.62</b></p>
+            <p><small>assignment</small><b id="track-assignment">Hungarian → #17</b></p>
+          </div>
+          <div class="memory-strip"><span>query memory</span><i></i><i></i><i></i><i></i></div>
         </div>
-        <figcaption><span>Figure 4</span><b>A track query is cross-frame state, not a newly numbered detection box.</b> QIM updates active queries, a four-entry memory bank retains recent features, and lifecycle logic bridges short occlusions.</figcaption>
+        <div class="timeline-control">
+          <input id="track-time" type="range" min="0" max="4" value="0" step="1" aria-label="Track lifecycle frame">
+          <div><span>discover</span><span>match</span><span>carry</span><span>occluded</span><span>timeout</span></div>
+        </div>
+        <div class="explainer-takeaway"><span id="track-state">Newborn</span><p id="track-takeaway">A detection query receives identity #17 once through Hungarian matching.</p></div>
+        <figcaption><span>Figure 4</span><b>Identity travels with the query.</b> The orange car may disappear, but the blue query and its four-entry memory remain until the low-score timeout expires.</figcaption>
       </figure>
       <div class="copy">
         <h3>The one exceptional query</h3>
@@ -273,26 +315,28 @@
         <b>Online map ≠ HD map</b>
         <p>MapFormer estimates road elements online from current camera evidence and BEV, avoiding reliance on a pre-built map and exact map localization.</p>
       </aside>
-      <figure class="wide-figure map-figure">
-        <div class="map-query-bank">
-          <p>300 thing queries</p>
-          <div id="map-dots" aria-hidden="true"></div>
-          <span>+ 1 stuff query</span>
-        </div>
-        <div class="decoder-stack">
-          <div><b>6×</b><span>location decoder</span></div>
-          <div><b>4×</b><span>thing mask decoder</span></div>
-          <div><b>6×</b><span>stuff mask decoder</span></div>
-        </div>
-        <div class="map-output">
-          <svg viewBox="0 0 360 250" aria-label="Online map elements">
-            <path class="road" d="M96 250c30-72 22-134-12-250M264 250c-30-72-22-134 12-250"/>
-            <path class="divider" d="M180 250V0"/><path class="crossing" d="M112 96h136M108 112h144M105 128h150"/>
-            <path class="boundary" d="M44 250c20-84 10-166-24-250M316 250c-20-84-10-166 24-250"/>
+      <figure class="wide-figure explainer map-explainer">
+        <header class="explainer-head">
+          <p><span>Test a future</span>Is a kinematically possible endpoint also a plausible one?</p>
+          <small>Drag the blue endpoint across the road geometry.</small>
+        </header>
+        <div class="map-scene" id="map-scene">
+          <svg viewBox="0 0 1000 520" role="img" aria-label="Road geometry with draggable future endpoint">
+            <path class="map-drivable" d="M280 520C340 385 330 180 300 0H700C670 180 660 385 720 520Z"/>
+            <path class="map-boundary left" d="M280 520C340 385 330 180 300 0"/>
+            <path class="map-boundary right" d="M720 520C660 385 670 180 700 0"/>
+            <path class="map-divider" d="M500 520V0"/>
+            <g class="map-crossing"><path d="M340 185H660"/><path d="M335 205H665"/><path d="M332 225H668"/></g>
+            <path class="candidate-path" id="candidate-path" d="M500 455Q500 300 500 105"/>
+            <circle class="map-agent" cx="500" cy="455" r="15"/>
+            <circle class="endpoint-halo" id="endpoint-halo" cx="500" cy="105" r="34"/>
+            <circle class="map-endpoint" id="map-endpoint" cx="500" cy="105" r="14" tabindex="0"/>
           </svg>
-          <p><i></i>lane <i></i>divider <i></i>crossing <i></i>drivable</p>
+          <div class="map-attention" id="map-attention"><span>attending to</span><b>lane divider</b></div>
+          <output id="map-feasibility">high support</output>
         </div>
-        <figcaption><span>Figure 5</span><b>Location and shape are decoded separately.</b> Downstream prediction reads query features containing road semantics and geometry, not the final binary masks.</figcaption>
+        <div class="explainer-takeaway"><span id="map-state">On lane</span><p id="map-takeaway">The endpoint agrees with drivable geometry and lane direction.</p></div>
+        <figcaption><span>Figure 5</span><b>Map queries turn geometry into a condition on motion.</b> The endpoint can remain smooth and reachable while losing support when it crosses a boundary or lands off-road.</figcaption>
       </figure>
     </section>
 
@@ -314,21 +358,31 @@
         <b>Scene-centric</b>
         <p>All agents are forecast once in a common scene frame; the system need not rotate the whole scene into each vehicle's local frame. In the paper's ablation, rotated scene anchors materially improve minADE and minFDE.</p>
       </aside>
-      <figure class="wide-figure motionformer-figure">
-        <div class="motion-query">
-          <span>Q<sub>i,k</sub><small>agent i · mode k</small></span>
+      <figure class="wide-figure explainer motion-explainer" data-context="on">
+        <header class="explainer-head">
+          <p><span>Run the counterfactual</span>What does an independent forecast miss?</p>
+          <small>Press and hold to remove all three context branches.</small>
+        </header>
+        <div class="motion-scene">
+          <svg viewBox="0 0 1000 520" role="img" aria-label="Contextual and independent motion forecasts">
+            <path class="motion-road" d="M210 520C280 350 310 170 280 0M790 520C720 350 690 170 720 0"/>
+            <path class="motion-lane" d="M500 520V0"/>
+            <path class="motion-conflict" d="M180 245H820"/>
+            <rect class="motion-ego" x="476" y="430" width="48" height="76" rx="5"/>
+            <rect class="motion-other" x="685" y="220" width="58" height="34" rx="4"/>
+            <path class="forecast ghost" d="M500 430C500 340 505 245 510 92"/>
+            <path class="forecast contextual" id="contextual-forecast" d="M500 430C500 350 460 295 448 240C438 190 470 140 485 92"/>
+            <circle class="forecast-goal" cx="485" cy="92" r="9"/>
+          </svg>
+          <div class="context-signals">
+            <span class="agent-context"><i></i>agent conflict</span>
+            <span class="map-context"><i></i>lane geometry</span>
+            <span class="goal-context"><i></i>BEV at endpoint</span>
+          </div>
+          <button id="remove-context" class="hold-control">press and hold<br><b>remove context</b></button>
         </div>
-        <div class="interaction-tabs" role="tablist" aria-label="MotionFormer interaction types">
-          <span>Focus one parallel branch</span>
-          <button data-interaction="agent" aria-selected="true">Agent ↔ Agent</button>
-          <button data-interaction="map" aria-selected="false">Agent ↔ Map</button>
-          <button data-interaction="goal" aria-selected="false">Agent ↔ Goal</button>
-        </div>
-        <div class="interaction-canvas" id="interaction-canvas"></div>
-        <div class="motion-fuse">
-          <span>Q<sub>a</sub></span><span>Q<sub>m</sub></span><span>Q<sub>g</sub></span><b>concat + MLP</b><strong>Q<sub>ctx</sub><sup>l</sup></strong>
-        </div>
-        <figcaption><span>Figure 6</span><b>All three interactions run in parallel at every layer.</b> Agent–agent and agent–map use self/cross attention; agent–goal uses the predicted endpoint as a reference for deformable attention into BEV.</figcaption>
+        <div class="explainer-takeaway"><span id="motion-state">Context on</span><p id="motion-takeaway">The active mode yields before the crossing agent, stays inside the lane, and resamples evidence near its endpoint.</p></div>
+        <figcaption><span>Figure 6</span><b>The branches are parallel, so the interaction is a counterfactual—not a tab switch.</b> Hold the control to reveal the independent ghost forecast; release it to restore agent, map, and goal conditioning.</figcaption>
       </figure>
       <div class="copy">
         <h3>Two nonlinear optimizers that are easy to confuse</h3>
@@ -351,34 +405,22 @@
         <b>Time horizon</b>
         <p>Five blocks mean the current frame plus four future frames. At 2Hz, occupancy covers two seconds; motion and planning both extend to three seconds.</p>
       </aside>
-      <figure class="wide-figure occformer-figure">
-        <div class="occ-source">
-          <span>Q<sub>A</sub></span><span>P<sub>A</sub></span><span>Q<sub>X</sub></span>
-          <b>temporal MLP</b><strong>G<sup>t</sup></strong>
+      <figure class="wide-figure explainer occupancy-explainer">
+        <header class="explainer-head">
+          <p><span>Unroll it</span>How do sparse agent futures become a dense safety field?</p>
+          <small>Scrub time; identities move while risk is written into cells.</small>
+        </header>
+        <div class="occupancy-scene">
+          <canvas id="occupancy-world" width="1000" height="560" aria-label="Sparse agents and dense occupancy over time"></canvas>
+          <div class="occupancy-key"><span><i class="agent-a"></i>agent A</span><span><i class="agent-b"></i>agent B</span><span><i class="risk-cell"></i>identity-conditioned cell</span></div>
+          <output id="occupancy-step">t + 1.0 s · block 3 / 5</output>
         </div>
-        <div class="occ-block">
-          <div class="dense-state"><small>F<sup>t−1</sup> · 1/4</small><canvas id="occ-input" width="260" height="260"></canvas></div>
-          <div class="occ-operator">
-            <span>↓ 1/8</span><b>pixel self-attention</b><b>pixel → agent cross-attention</b><span>↑ 1/4 + residual</span>
-          </div>
-          <div class="dense-state"><small>F<sup>t</sup> · 1/4</small><canvas id="occ-output" width="260" height="260"></canvas></div>
+        <div class="direct-control">
+          <label for="occ-time"><span>current</span><b>future time</b><span>+2.0 s</span></label>
+          <input id="occ-time" type="range" min="0" max="4" value="2" step="1">
         </div>
-        <div class="occ-decode">
-          <span>U<sup>t</sup> ∈ R<sup>Na×256</sup></span><i>·</i><span>F<sub>dec</sub><sup>t</sup> ∈ R<sup>256×H×W</sup></span><i>=</i><b>Ô<sub>A</sub><sup>t</sup></b>
-        </div>
-        <div class="occ-time-control">
-          <label for="occ-time">Unroll the future <output id="occ-time-label">t + 2</output></label>
-          <input id="occ-time" type="range" min="0" max="4" value="2">
-        </div>
-        <dl class="occ-ledger" aria-live="polite">
-          <div><dt>Temporal block</dt><dd id="occ-block-readout">3 / 5</dd></div>
-          <div><dt>Dense input</dt><dd id="occ-input-readout">F¹ at 1/4 resolution</dd></div>
-          <div><dt>Agent state</dt><dd id="occ-agent-readout">G² from the timestep-specific MLP</dd></div>
-          <div><dt>Attention roles</dt><dd>pixels query · agents key/value</dd></div>
-          <div><dt>Coarse mask</dt><dd id="occ-mask-readout">attention constraint + auxiliary Ô²</dd></div>
-          <div><dt>Dense output</dt><dd id="occ-output-readout">F² with identity-conditioned future evidence</dd></div>
-        </dl>
-        <figcaption><span>Figure 7</span><b>Inside one OccFormer block.</b> The coarse mask serves as both an attention constraint and an auxiliary prediction. Final instance occupancy is the dot product of agent occupancy features and full-resolution dense features.</figcaption>
+        <div class="explainer-takeaway"><span id="occupancy-state">Dense answer</span><p id="occupancy-takeaway">Pixels query agent features, so each occupied cell inherits who may occupy it—not only that something is there.</p></div>
+        <figcaption><span>Figure 7</span><b>Sparse and dense representations share one scene.</b> Agent features provide identity; recurrent dense features provide spatial continuity. Their dot product yields per-agent occupancy before instances merge into Planner’s risk field.</figcaption>
       </figure>
     </section>
 
@@ -398,35 +440,18 @@
         <b>Training vs. inference</b>
         <p>Training uses imitation plus collision loss. Inference can additionally optimize the path against OccFormer's binary occupancy. These are distinct safety mechanisms.</p>
       </aside>
-      <figure class="wide-figure planner-figure">
-        <div class="planner-controls">
-          <div role="group" aria-label="Navigation command">
-            <button data-command="left" aria-pressed="false">Left</button>
-            <button data-command="forward" aria-pressed="true">Forward</button>
-            <button data-command="right" aria-pressed="false">Right</button>
-          </div>
-          <label><input type="checkbox" id="collision-toggle" checked> occupancy optimization</label>
-          <dl>
-            <div><dt>λ<sub>coord</sub></dt><dd>1.0</dd></div>
-            <div><dt>λ<sub>obs</sub></dt><dd>5.0</dd></div>
-            <div><dt>σ</dt><dd>1.0</dd></div>
-            <div><dt>filter</dt><dd>5 m</dd></div>
-          </dl>
+      <figure class="wide-figure explainer planning-explainer">
+        <header class="explainer-head">
+          <p><span>Move the risk</span>How far should safety bend intent?</p>
+          <small>Drag the occupancy hotspot across the learned reference path.</small>
+        </header>
+        <div class="planning-scene">
+          <canvas id="planner-canvas" width="1000" height="590" aria-label="Drag occupancy risk to bend the optimized plan"></canvas>
+          <div class="planning-key"><span><i class="reference"></i>learned reference τ̂</span><span><i class="optimized"></i>optimized plan τ*</span></div>
+          <div class="planning-measures"><p><span>deviation</span><b id="planner-reference-cost">0.00</b></p><p><span>clearance</span><b id="planner-clearance">—</b></p></div>
         </div>
-        <canvas id="planner-canvas" width="820" height="520" aria-label="Planned trajectory under command and occupancy constraints"></canvas>
-        <div class="planner-equation">
-          <span>τ* = arg min</span>
-          <b>‖τ − τ̂‖²</b>
-          <i>+</i>
-          <b>Σ GaussianDistance(τ<sub>t</sub>, Ô<sup>t</sup>)</b>
-        </div>
-        <div class="planner-ledger" aria-live="polite">
-          <p><span>Reference deviation</span><b id="planner-reference-cost">—</b></p>
-          <p><span>Occupancy penalty</span><b id="planner-obstacle-cost">—</b></p>
-          <p><span>Closest clearance</span><b id="planner-clearance">—</b></p>
-          <p><span>Interpretation</span><b id="planner-interpretation">—</b></p>
-        </div>
-        <figcaption><span>Figure 8</span><b>The occupancy-aware optimizer used at inference.</b> The first term pulls the path toward the learned reference; the second pushes each future waypoint away from occupied cells at the corresponding time. Toggle the command and optimization switch to separate their roles.</figcaption>
+        <div class="explainer-takeaway"><span id="planner-state">Time-matched correction</span><p id="planner-interpretation">The ghost path preserves intent; only waypoints near the selected future occupancy move.</p></div>
+        <figcaption><span>Figure 8</span><b>Direct manipulation exposes the optimizer’s trade-off.</b> The reference never disappears. Bringing risk toward one future waypoint increases local clearance while also increasing deviation from the learned plan.</figcaption>
       </figure>
       <div class="copy">
         <h3>How safety margin enters training</h3>
@@ -442,27 +467,27 @@
         <p class="lead">The full graph has 125 million parameters and multiple sequence-heavy tasks. UniAD stabilizes optimization with two training stages and deliberately freezes its most expensive image and BEV components.</p>
         <p class="answer"><span>Answer 09</span>Shared gradients are useful only after the coordinate system and sparse interfaces become stable. Stage 1 establishes perception; Stage 2 makes downstream objectives negotiate over those representations.</p>
       </div>
-      <figure class="wide-figure training-figure">
-        <div class="training-phase">
-          <header><span>Stage 1</span><b>Perception warm-up</b><i>6 epochs</i></header>
-          <div class="freeze-row"><span>Image backbone</span><b>frozen</b></div>
-          <div class="freeze-row"><span>FPN + BEV encoder</span><b>train</b></div>
-          <div class="freeze-row on"><span>Track + Map</span><b>L<sub>track</sub> + L<sub>map</sub></b></div>
+      <figure class="wide-figure explainer learning-explainer" data-stage="1">
+        <header class="explainer-head">
+          <p><span>Change stage</span>Which gradients are allowed to reshape the shared world?</p>
+          <small>Move once from perception warm-up to planning-oriented training.</small>
+        </header>
+        <div class="learning-scene">
+          <div class="learning-modules">
+            <div data-learn-module="image"><span>Image backbone</span><b>frozen</b></div>
+            <i>→</i><div data-learn-module="bev"><span>BEV encoder</span><b>train</b></div>
+            <i>→</i><div data-learn-module="track"><span>Track + Map</span><b>train</b></div>
+            <i>→</i><div data-learn-module="future"><span>Motion + Occ</span><b>absent</b></div>
+            <i>→</i><div data-learn-module="plan"><span>Planner</span><b>absent</b></div>
+          </div>
+          <div class="gradient-line"><i></i><span id="gradient-label">Ltrack + Lmap stabilize the shared representation</span></div>
         </div>
-        <div class="training-phase">
-          <header><span>Stage 2</span><b>Planning-oriented joint training</b><i>20 epochs</i></header>
-          <div class="freeze-row"><span>Image backbone</span><b>frozen</b></div>
-          <div class="freeze-row"><span>BEV encoder</span><b>frozen</b></div>
-          <div class="freeze-row on"><span>All task modules</span><b>Σ L<sub>task</sub></b></div>
+        <div class="stage-control" role="group" aria-label="Training stage">
+          <button data-training-stage="1" aria-pressed="true"><span>Stage 1 · 6 epochs</span><b>Perception warm-up</b></button>
+          <button data-training-stage="2" aria-pressed="false"><span>Stage 2 · 20 epochs</span><b>Planning-oriented joint training</b></button>
         </div>
-        <div class="loss-ledger">
-          <p><span>Track</span><b>2.0 focal + 0.25 L1</b></p>
-          <p><span>Map</span><b>focal + L1 + GIoU + Dice</b></p>
-          <p><span>Motion</span><b>0.5 class + 0.5 NLL</b></p>
-          <p><span>Occupancy</span><b>5.0 BCE + 1.0 Dice + auxiliary</b></p>
-          <p><span>Planning</span><b>imitation + 2.5 collision</b></p>
-        </div>
-        <figcaption><span>Figure 9</span><b>The two stages are not cosmetic curriculum learning.</b> Stage 2 freezes the BEV encoder to reduce memory after downstream modules are added and to preserve the stabilized view transformation.</figcaption>
+        <div class="explainer-takeaway"><span id="learning-state">Establish the interface</span><p id="learning-takeaway">Track and map supervision first teach BEV a stable coordinate system and sparse task interface.</p></div>
+        <figcaption><span>Figure 9</span><b>Two stages change where gradients are allowed to go.</b> Stage 2 adds every downstream loss but freezes the expensive BEV encoder, preserving the stabilized view transformation while task heads negotiate over its outputs.</figcaption>
       </figure>
       <div class="copy">
         <p>The full experiment uses batch size 1, five-frame training sequences, AdamW, learning rate <code>2×10⁻⁴</code>, weight decay <code>10⁻²</code>, and sixteen A100 GPUs. The released stage-2 configuration sets queue length to 3; ablations also shorten sequences and epochs for efficiency. Full and ablation settings must not be conflated when interpreting results.</p>
@@ -482,19 +507,29 @@
         <b>Metric conditions</b>
         <p>Standard minADE and minFDE are computed only on successfully matched true positives. EPA and minFDE-AP are the metrics that jointly penalize perception and prediction failure.</p>
       </aside>
-      <figure class="wide-figure evidence-figure">
-        <div class="dependency-chart">
-          <div class="chart-row"><span>Motion only</span><i style="--value:60%"></i><b>minADE 0.815</b></div>
-          <div class="chart-row"><span>+ Track</span><i style="--value:78%"></i><b>0.751</b></div>
-          <div class="chart-row"><span>+ Track + Map</span><i style="--value:92%"></i><b>0.736</b></div>
-          <small>Relative bar length shows the direction of improvement; values come from the paper's module ablation.</small>
+      <figure class="wide-figure explainer evidence-explainer">
+        <header class="explainer-head">
+          <p><span>Inspect an edge</span>Which information route has experimental support?</p>
+          <small>Select a dependency arrow, not a model variant.</small>
+        </header>
+        <div class="evidence-scene">
+          <div class="evidence-node track">Track</div>
+          <button class="evidence-edge e1" data-evidence-edge="track-motion" aria-pressed="true"><span>→</span><small>inspect</small></button>
+          <div class="evidence-node motion">Motion</div>
+          <button class="evidence-edge e2" data-evidence-edge="map-motion" aria-pressed="false"><span>↗</span><small>inspect</small></button>
+          <div class="evidence-node map">Map</div>
+          <button class="evidence-edge e3" data-evidence-edge="motion-occ" aria-pressed="false"><span>→</span><small>inspect</small></button>
+          <div class="evidence-node occ">Occupancy</div>
+          <button class="evidence-edge e4" data-evidence-edge="occ-plan" aria-pressed="false"><span>→</span><small>inspect</small></button>
+          <div class="evidence-node plan">Planner</div>
+          <div class="evidence-result" aria-live="polite">
+            <span id="evidence-test">Motion ablation · add tracking</span>
+            <p><b id="evidence-before">0.815</b><i>→</i><b id="evidence-after">0.751</b></p>
+            <small id="evidence-metric">minADE · lower is better · Δ −0.064</small>
+          </div>
         </div>
-        <div class="complexity-chart">
-          <div><span>BEVFormer-like detector</span><b>65.9M</b><i>1324G · 4.2 FPS</i></div>
-          <div><span>+ Track + Map + Motion</span><b>108.6M</b><i>1535G · 2.1 FPS</i></div>
-          <div class="full"><span>Full UniAD</span><b>125.0M</b><i>1709G · 1.8 FPS</i></div>
-        </div>
-        <figcaption><span>Figure 10</span><b>Accuracy gains carry explicit computational cost.</b> Runtime was measured on an A100 in the paper's software environment and cannot be transplanted into a latency claim for other hardware.</figcaption>
+        <div class="explainer-takeaway"><span id="evidence-state">Supported edge</span><p id="evidence-takeaway">Agent identity and history improve motion prediction beyond a motion-only decoder.</p></div>
+        <figcaption><span>Figure 10</span><b>Ablations support individual routes, not a vague “more modules is better” claim.</b> Each selection names the changed dependency, the metric condition, and the observed direction. Complexity remains 125.0M parameters, 1709G FLOPs, and 1.8 FPS for full UniAD in the paper’s A100 environment.</figcaption>
       </figure>
       <div class="copy">
         <h3>Planning metrics still require care</h3>
@@ -510,19 +545,35 @@
         <p class="lead">The C11 program in this repository is a representation-flow vertical slice, not a port of the released checkpoint. It reduces every tensor and uses deterministic scalar operators so state lifetime, input containers, and the result schema remain auditable.</p>
         <p class="answer"><span>Answer 11</span>It can prove a deterministic data contract and oracle agreement for the tiny graph. Figure 11 exposes the canonical record—including its awkward synthetic geometry—instead of pretending it is production output.</p>
       </div>
-      <div class="wide-figure contract-toggle">
-        <div class="contract-controls" role="group" aria-label="Runtime profiles">
-          <button data-contract="tiny" aria-pressed="true">Executable slice</button>
-          <button data-contract="upstream" aria-pressed="false">Upstream contract</button>
+      <div class="wide-figure explainer contract-explainer" style="--wipe: 38%">
+        <header class="explainer-head">
+          <p><span>Compare contracts</span>Where does the C11 slice stop matching production?</p>
+          <small>Drag the reveal; aligned columns represent the same semantic stage.</small>
+        </header>
+        <div class="contract-scene">
+          <div class="contract-layer production">
+            <span>Production architecture</span>
+            <div><b>6 × BGR</b><small>R101 + FPN</small></div><i>→</i>
+            <div><b>200² × 256</b><small>BEVFormer ×6</small></div><i>→</i>
+            <div><b>900 + 300 Q</b><small>Track + Map</small></div><i>→</i>
+            <div><b>6×12 · 5×200²</b><small>Motion + Occ</small></div><i>→</i>
+            <div><b>6 points</b><small>Planner ×3</small></div>
+          </div>
+          <div class="contract-layer tiny">
+            <span>Executable C11 slice</span>
+            <div><b>6 × 3 × 8²</b><small>scalar projection</small></div><i>→</i>
+            <div><b>8² × 16</b><small>fixed cross sample</small></div><i>→</i>
+            <div><b>64 → top 8</b><small>stable scalar score</small></div><i>→</i>
+            <div><b>3 × 4 · 3 × 8²</b><small>analytic rules</small></div><i>→</i>
+            <div><b>6 points</b><small>command + risk</small></div>
+          </div>
+          <div class="contract-divider"><i></i><span>drag</span></div>
         </div>
-        <div class="contract-flow" id="contract-flow"></div>
-        <p id="contract-note">Fixed capacities, seeded weights, and no remote dependencies; executable against an independent PyTorch oracle.</p>
-        <dl class="contract-evidence" aria-live="polite">
-          <div><dt>Runnable here?</dt><dd id="contract-runnable">yes · CPU and optional CUDA marker path</dd></div>
-          <div><dt>Weights</dt><dd id="contract-weights">seed-derived synthetic container</dd></div>
-          <div><dt>Strongest proof</dt><dd id="contract-proof">two-frame agreement with an independent PyTorch oracle</dd></div>
-          <div><dt>Why this boundary?</dt><dd id="contract-boundary">operator and checkpoint coverage stop before production equivalence</dd></div>
-        </dl>
+        <div class="direct-control">
+          <label for="contract-wipe"><span>more C11</span><b>comparison reveal</b><span>more production</span></label>
+          <input id="contract-wipe" type="range" min="8" max="92" value="38">
+        </div>
+        <div class="explainer-takeaway"><span>Same route, different operators</span><p>The columns align semantically, but tensor scale, learned operators, weights, and evaluator coverage diverge at every stage.</p></div>
       </div>
       <div class="copy">
         <h3>The actual path through <code>ua_infer</code></h3>
@@ -551,28 +602,7 @@
           </div>
         </header>
         <div class="canonical-workbench">
-          <div class="canonical-controls">
-            <fieldset>
-              <legend>Layers from the JSON record</legend>
-              <label><input type="checkbox" data-canonical-layer="map" checked> map <small>4 polylines</small></label>
-              <label><input type="checkbox" data-canonical-layer="occupancy" checked> occupancy <small>8 × 8 binary</small></label>
-              <label><input type="checkbox" data-canonical-layer="tracks" checked> tracks <small>top 8</small></label>
-              <label><input type="checkbox" data-canonical-layer="motion" checked> motion <small>3 × 4 / track</small></label>
-              <label><input type="checkbox" data-canonical-layer="plan" checked> ego plan <small>6 waypoints</small></label>
-            </fieldset>
-            <div class="canonical-slider">
-              <label for="canonical-time">Future step <output id="canonical-time-label">3 / 4</output></label>
-              <input id="canonical-time" type="range" min="0" max="3" value="3">
-            </div>
-            <div class="canonical-modes" role="group" aria-label="Motion mode">
-              <span>Motion mode</span>
-              <button data-canonical-mode="0" aria-pressed="true">0</button>
-              <button data-canonical-mode="1" aria-pressed="false">1</button>
-              <button data-canonical-mode="2" aria-pressed="false">2</button>
-            </div>
-            <p class="canonical-hint">Select a track in the plot to inspect its exact source values.</p>
-          </div>
-          <canvas id="canonical-canvas" width="860" height="680" aria-label="Interactive plot of the UniAD.c canonical JSON result"></canvas>
+          <canvas id="canonical-canvas" width="860" height="680" aria-label="Interactive plot of the UniAD.c canonical JSON result. Select tracks with pointer or left and right arrow keys."></canvas>
           <aside class="canonical-inspector" aria-live="polite">
             <span id="inspector-kind">Record</span>
             <h3 id="inspector-title">No track selected</h3>
@@ -584,6 +614,29 @@
             <p id="inspector-note">The viewport is fixed to x ∈ [−4.5, 4.5] m and y ∈ [−4.5, 5.0] m so negative-y tracks remain visible.</p>
           </aside>
         </div>
+        <details class="canonical-details">
+          <summary>Adjust layers, future step, and motion mode</summary>
+          <div class="canonical-controls">
+            <fieldset>
+              <legend>Layers from the JSON record</legend>
+              <label><input type="checkbox" data-canonical-layer="map" checked> map <small>4 polylines</small></label>
+              <label><input type="checkbox" data-canonical-layer="occupancy" checked> occupancy <small>8 × 8 binary</small></label>
+              <label><input type="checkbox" data-canonical-layer="tracks" checked> tracks <small>top 8</small></label>
+              <label><input type="checkbox" data-canonical-layer="motion" checked> motion <small>3 × 4 / track</small></label>
+              <label><input type="checkbox" data-canonical-layer="plan" checked> ego plan <small>6 waypoints</small></label>
+            </fieldset>
+            <div class="canonical-slider">
+              <label for="canonical-time">Future step <output id="canonical-time-label">4 / 4 · occ h2</output></label>
+              <input id="canonical-time" type="range" min="0" max="3" value="3">
+            </div>
+            <div class="canonical-modes" role="group" aria-label="Motion mode">
+              <span>Motion mode</span>
+              <button data-canonical-mode="0" aria-pressed="true">0</button>
+              <button data-canonical-mode="1" aria-pressed="false">1</button>
+              <button data-canonical-mode="2" aria-pressed="false">2</button>
+            </div>
+          </div>
+        </details>
         <div class="canonical-lineage">
           <span><b>01</b><code>ua_result_write_json</code></span>
           <i>→</i><span><b>02</b><code>demo-result.json</code></span>
@@ -602,12 +655,20 @@
         <p>The repository can establish safe container parsing, basic-operator agreement with an oracle, and correct temporal carry in a two-frame synthetic graph. None of those facts implies production-checkpoint equivalence or task accuracy on nuScenes.</p>
         <p class="answer"><span>Answer 12</span>Only after export, operator coverage, tensor-by-tensor checkpoint comparison, and dataset evaluation. This repository intentionally stops three rungs earlier.</p>
       </div>
-      <div class="wide-figure proof-ladder">
-        <div class="proved"><span>01</span><b>Container safety</b><i>proved</i><p>magic · shape · finite · checksum</p></div>
-        <div class="proved"><span>02</span><b>Operator fixtures</b><i>proved</i><p>C scalar ↔ PyTorch oracle</p></div>
-        <div class="proved"><span>03</span><b>Synthetic graph</b><i>proved</i><p>two frames · carry · reset</p></div>
-        <div><span>04</span><b>Checkpoint equivalence</b><i>missing</i><p>export · names · shapes · operators</p></div>
-        <div><span>05</span><b>Task accuracy</b><i>unclaimed</i><p>dataset · evaluator · metrics</p></div>
+      <div class="wide-figure explainer ladder-explainer">
+        <header class="explainer-head">
+          <p><span>Inspect a rung</span>What evidence is required for the next claim?</p>
+          <small>Select a level in the ladder.</small>
+        </header>
+        <div class="proof-ladder" role="group" aria-label="Correctness evidence levels">
+          <button class="proved" data-proof-rung="0" aria-pressed="false"><span>01</span><b>Container safety</b><i>proved</i></button>
+          <button class="proved" data-proof-rung="1" aria-pressed="false"><span>02</span><b>Operator fixtures</b><i>proved</i></button>
+          <button class="proved" data-proof-rung="2" aria-pressed="true"><span>03</span><b>Synthetic graph</b><i>proved</i></button>
+          <button data-proof-rung="3" aria-pressed="false"><span>04</span><b>Checkpoint equivalence</b><i>missing</i></button>
+          <button data-proof-rung="4" aria-pressed="false"><span>05</span><b>Task accuracy</b><i>unclaimed</i></button>
+        </div>
+        <div class="proof-reading" aria-live="polite"><span id="proof-status">Current ceiling</span><b id="proof-title">Synthetic graph</b><p id="proof-copy">Two-frame carry, reset behavior, and final JSON agree with an independent PyTorch oracle.</p></div>
+        <div class="explainer-takeaway"><span id="proof-next">What remains</span><p id="proof-takeaway">A production claim next requires checkpoint export, name and shape mapping, and learned-operator parity.</p></div>
       </div>
     </section>
 

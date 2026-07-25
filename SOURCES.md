@@ -21,3 +21,17 @@ trademark asset is copied into this repository.
 The implementation-level findings used by the technical article are summarized
 in `evidence/uniad-architecture-study.md`. That note separates upstream
 architecture facts from the executable synthetic C profile.
+
+The interaction system was informed by three public explanatory-design
+precedents:
+
+- Bartosz Ciechanowski, [Mechanical Watch](https://ciechanow.ski/mechanical-watch/)
+  for direct manipulation and stable one-variable experiments;
+- Distill, [Why Momentum Really Works](https://distill.pub/2017/momentum/)
+  for placing interaction at the point of inquiry and keeping interpretation
+  adjacent to the changing result;
+- The Pudding, [How to implement scrollytelling](https://pudding.cool/process/how-to-implement-scrollytelling/)
+  for observing scroll without hijacking it.
+
+The resulting audit, design grammar, storyboard, and acceptance criteria are
+recorded in `evidence/interaction-design-study.md`.

@@ -26,8 +26,18 @@ css = (root / "docs/assets/site.css").read_text()
 assert "@import" not in css and "url(http" not in css
 script = (root / "docs/assets/site.js").read_text()
 for hook in ("canonicalMapPoints", "canonicalBounds", "data-canonical-layer",
-             "planner-obstacle-cost", "occ-block-readout"):
+             "interface-aperture", "alignment-control", "track-time",
+             "map-endpoint", "remove-context", "occupancy-world",
+             "planner-canvas", "data-training-stage", "data-evidence-edge",
+             "contract-wipe", "data-proof-rung"):
     assert hook in html or hook in script, f"missing interaction hook: {hook}"
+for legacy_hook in ("data-system-step", "data-life=", "data-interaction=",
+                    "collision-toggle", "data-contract="):
+    assert legacy_hook not in html, f"legacy detached-control pattern remains: {legacy_hook}"
+design_study = (root / "evidence/interaction-design-study.md").read_text()
+for principle in ("One scene, one gesture", "Preserve a baseline",
+                  "Progressive disclosure", "Input parity"):
+    assert principle in design_study, f"interaction study missing principle: {principle}"
 assert not re.search(r"[\u3400-\u9fff]", html + script), \
     "article and interactive copy must remain English"
 node = subprocess.run(["node", "--check", root / "docs/assets/site.js"],
