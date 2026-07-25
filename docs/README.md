@@ -8,6 +8,12 @@ OccFormer writes sparse agent futures back into a dense risk field, and how
 Planner reduces ego intent, navigation command, BEV, and occupancy to six
 future waypoints.
 
+Each explanatory view uses one causal gesture tied to its section question:
+align the previous BEV, scrub one query through occlusion, drag a motion
+endpoint across map geometry, remove interaction context, unroll dense
+occupancy, or move risk through a planned path. Exact runtime controls remain
+available as progressive disclosure rather than dominating the reading flow.
+
 The repository also contains an executable C11 synthetic vertical slice. It
 reduces the production representation flow to fixed capacities:
 `6×3×8×8` camera planes, an `8×8×16` temporal BEV, 64 candidates reduced to a
