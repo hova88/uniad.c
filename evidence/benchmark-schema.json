@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "uniad.c synthetic benchmark v1",
+  "type": "object",
+  "required": ["schema", "evidence", "backend", "runs", "cold_ms", "warm_mean_ms",
+               "stages_ms", "owned_host_bytes", "owned_device_bytes",
+               "h2d_bytes", "d2h_bytes"],
+  "properties": {
+    "schema": {"const": "uniad.c/benchmark-v1"},
+    "evidence": {"const": "synthetic"},
+    "backend": {"enum": ["cpu", "cuda"]},
+    "runs": {"type": "integer", "minimum": 1},
+    "cold_ms": {"type": "number", "minimum": 0},
+    "warm_mean_ms": {"type": "number", "minimum": 0},
+    "stages_ms": {"type": "object"},
+    "owned_host_bytes": {"type": "integer", "maximum": 268435456},
+    "owned_device_bytes": {"type": "integer", "maximum": 268435456},
+    "h2d_bytes": {"type": "integer", "minimum": 0},
+    "d2h_bytes": {"type": "integer", "minimum": 0}
+  }
+}

@@ -1,0 +1,11 @@
+[
+  {"operator":"camera projection","production":"ResNet-101 + FPN","demo":"weighted scalar view projection","route":"CPU"},
+  {"operator":"ego warp","production":"BEV rotation/translation","demo":"integer translation + blend","route":"CPU"},
+  {"operator":"temporal attention","production":"deformable attention","demo":"scene-keyed weighted carry","route":"CPU"},
+  {"operator":"spatial attention","production":"multi-scale deformable attention","demo":"fixed cross samples","route":"CPU"},
+  {"operator":"tracking decoder","production":"900 learned queries","demo":"64 cells + stable top 8","route":"CPU"},
+  {"operator":"map decoder","production":"learned vector queries","demo":"four scored lane lines","route":"CPU"},
+  {"operator":"motion head","production":"6 modes × 12 steps","demo":"3 modes × 4 steps","route":"CPU"},
+  {"operator":"occupancy head","production":"future masks","demo":"3 thresholded 8×8 masks","route":"CPU"},
+  {"operator":"planning head","production":"command-conditioned learned plan","demo":"6 analytic points + collision","route":"CPU"}
+]

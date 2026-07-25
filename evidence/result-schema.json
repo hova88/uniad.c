@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "uniad.c canonical result v1",
+  "type": "object",
+  "required": ["schema", "profile", "scene", "frame_index", "coordinate_frame",
+               "units", "command", "tracks", "map", "motion", "occupancy",
+               "ego_plan", "collision_score"],
+  "properties": {
+    "schema": {"const": "uniad.c/result-v1"},
+    "profile": {"type": "string"},
+    "scene": {"type": "string"},
+    "frame_index": {"type": "integer", "minimum": 0},
+    "coordinate_frame": {"const": "ego"},
+    "units": {"type": "object"},
+    "command": {"type": "string"},
+    "tracks": {"type": "array", "maxItems": 8},
+    "map": {"type": "array", "maxItems": 8},
+    "motion": {"type": "array", "maxItems": 8},
+    "occupancy": {"type": "array", "maxItems": 3},
+    "ego_plan": {"type": "array", "maxItems": 6},
+    "collision_score": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}
