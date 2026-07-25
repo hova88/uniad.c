@@ -4,8 +4,8 @@ root = pathlib.Path(__file__).resolve().parents[1]
 html = (root / "docs/index.html").read_text()
 assert "<title>" in html and "<noscript>" in html and 'id="article"' in html
 required_sections = {
-    "thesis", "anatomy", "temporal", "modules", "motion", "occupancy",
-    "training", "implementation", "result", "evidence", "inventory",
+    "problem", "system", "bev", "queries", "map", "motion", "occupancy",
+    "planning", "training", "evidence", "runtime", "limits", "references",
 }
 missing = sorted(section for section in required_sections
                  if f'id="{section}"' not in html)
@@ -15,6 +15,9 @@ for link in re.findall(r'(?:href|src)="([^"#]+)"', html):
     assert (root / "docs" / link).exists(), f"broken local link: {link}"
 json.loads((root / "docs/assets/demo-result.json").read_text())
 json.loads((root / "docs/assets/operator-inventory.json").read_text())
+study = (root / "evidence/uniad-architecture-study.md").read_text()
+for topic in ("TrackFormer", "MapFormer", "MotionFormer", "OccFormer", "Planner"):
+    assert topic in study, f"architecture study missing topic: {topic}"
 css = (root / "docs/assets/site.css").read_text()
 assert "@import" not in css and "url(http" not in css
 node = subprocess.run(["node", "--check", root / "docs/assets/site.js"],
