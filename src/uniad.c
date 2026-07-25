@@ -28,7 +28,11 @@ typedef struct {
     char magic[4]; uint32_t version, endian, profile, camera_count;
     uint64_t frame_index, data_offset, file_size, payload_checksum;
     char scene[32]; char command[16]; float ego_dx, ego_dy, yaw;
-    uint8_t reserved[28];
+    double timestamp_seconds;
+    float can_bus[8], camera_intrinsics[UA_CAMERA_COUNT][9];
+    float camera_to_ego[UA_CAMERA_COUNT][16], ego_pose[16];
+    uint32_t track_capacity, map_capacity, motion_modes, prediction_steps, plan_steps;
+    uint8_t reserved[44];
 } disk_frame_header;
 
 struct ua_model {
@@ -160,6 +164,9 @@ ua_status ua_frame_load(const char *path, ua_frame **out) {
         h.file_size != h.data_offset + UA_IMAGE_VALUES * sizeof(float) ||
         !memchr(h.scene, '\0', sizeof(h.scene)) ||
         !memchr(h.command, '\0', sizeof(h.command))) goto done;
+    if (h.track_capacity != UA_MAX_TRACKS || h.map_capacity != UA_MAX_MAP ||
+        h.motion_modes != UA_MOTION_MODES || h.prediction_steps != UA_PRED_STEPS ||
+        h.plan_steps != UA_PLAN_STEPS) { status = UA_ERR_CAPACITY; goto done; }
     frame = (ua_frame *)calloc(1, sizeof(*frame));
     if (!frame) { status = UA_ERR_MEMORY; goto done; }
     memcpy(frame->scene, h.scene, sizeof(h.scene));
@@ -174,7 +181,11 @@ ua_status ua_frame_load(const char *path, ua_frame **out) {
         status = UA_ERR_CHECKSUM; goto done;
     }
     if (!all_finite(frame->camera, UA_IMAGE_VALUES) || !isfinite(h.ego_dx) ||
-        !isfinite(h.ego_dy) || !isfinite(h.yaw)) { status = UA_ERR_NONFINITE; goto done; }
+        !isfinite(h.ego_dy) || !isfinite(h.yaw) || !isfinite(h.timestamp_seconds) ||
+        !all_finite(h.can_bus, 8) ||
+        !all_finite(&h.camera_intrinsics[0][0], UA_CAMERA_COUNT * 9u) ||
+        !all_finite(&h.camera_to_ego[0][0], UA_CAMERA_COUNT * 16u) ||
+        !all_finite(h.ego_pose, 16)) { status = UA_ERR_NONFINITE; goto done; }
     *out = frame; frame = NULL; status = UA_OK;
 done:
     free(frame); fclose(f); return status;
@@ -425,6 +436,7 @@ ua_status ua_write_demo_assets(const char *directory) {
     while (pad--) fputc(0, f);
     if (fwrite(weights, 1, sizeof(weights), f) != sizeof(weights) || fclose(f)) return UA_ERR_IO;
     for (frame = 0; frame < 2; ++frame) {
+        unsigned c, row;
         for (i = 0; i < UA_IMAGE_VALUES; ++i) {
             unsigned cam = i / (3u * 8u * 8u), rem = i % (3u * 8u * 8u);
             unsigned ch = rem / 64u, p = rem % 64u;
@@ -436,6 +448,18 @@ ua_status ua_write_demo_assets(const char *directory) {
         fh.file_size = fh.data_offset + sizeof(pixels); fh.payload_checksum = fnv1a(pixels, sizeof(pixels));
         strcpy(fh.scene, "synthetic-scene-001"); strcpy(fh.command, frame ? "left" : "straight");
         fh.ego_dx = frame ? 1.0f : 0.0f; fh.ego_dy = 0.0f; fh.yaw = frame ? 0.02f : 0.0f;
+        fh.timestamp_seconds = 1700000000.0 + (double)frame * 0.5;
+        fh.can_bus[0] = fh.ego_dx; fh.can_bus[1] = fh.ego_dy; fh.can_bus[2] = fh.yaw;
+        for (c = 0; c < UA_CAMERA_COUNT; ++c) {
+            for (row = 0; row < 3; ++row) fh.camera_intrinsics[c][row * 3u + row] = 1.0f;
+            for (row = 0; row < 4; ++row) fh.camera_to_ego[c][row * 4u + row] = 1.0f;
+            fh.camera_to_ego[c][3] = (float)c * 0.1f;
+        }
+        for (row = 0; row < 4; ++row) fh.ego_pose[row * 4u + row] = 1.0f;
+        fh.ego_pose[3] = (float)frame;
+        fh.track_capacity = UA_MAX_TRACKS; fh.map_capacity = UA_MAX_MAP;
+        fh.motion_modes = UA_MOTION_MODES; fh.prediction_steps = UA_PRED_STEPS;
+        fh.plan_steps = UA_PLAN_STEPS;
         snprintf(path, sizeof(path), "%s/frame%u.uaf", directory, frame);
         f = fopen(path, "wb"); if (!f) return UA_ERR_IO;
         if (fwrite(&fh, 1, sizeof(fh), f) != sizeof(fh)) { fclose(f); return UA_ERR_IO; }

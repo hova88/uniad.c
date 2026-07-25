@@ -160,6 +160,15 @@ int main(int argc, char **argv) {
     if (!strcmp(argv[1], "inspect-model")) {
         ua_model *m = NULL; ua_status s;
         if (argc != 3) return 2;
+        if (!strcmp(argv[2], "--production")) {
+            printf("{\"profile\":\"production-nuscenes-stage2\",\"executable\":false,"
+                   "\"upstream_commit\":\"609ee083ea51c3521c323f1279dfc4cee0e60467\","
+                   "\"cameras\":6,\"camera_order\":\"BGR\",\"bev_shape\":[200,200,256],"
+                   "\"tracking_queries\":900,\"motion_modes\":6,\"prediction_steps\":12,"
+                   "\"planning_steps\":6,\"heads\":[\"tracking\",\"map\",\"motion\","
+                   "\"occupancy\",\"planning\"]}\n");
+            return 0;
+        }
         s = ua_model_load(argv[2], &m); if (s != UA_OK) return fail("inspect", s);
         printf("{\"container\":\"UAW\",\"version\":1,\"profile\":\"%s\","
                "\"seed\":%llu,\"tensors\":[{\"name\":\"demo.weights\","

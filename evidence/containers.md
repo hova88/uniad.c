@@ -10,8 +10,9 @@ name, dtype, rank/dimensions, aligned offset, byte count, and checksum. Profile
 identity and a deterministic seed live in the header.
 
 `UAF1` carries profile, scene/frame identity, six-camera count, command,
-ego-motion fields, and an aligned camera tensor payload. The production contract
-reserves calibration, timestamp, pose, and CAN-bus semantics, but the version-1
-synthetic file materializes only fields used by its graph.
+timestamp, CAN-bus values, per-camera `3×3` intrinsics and `4×4`
+camera-to-ego transforms, a `4×4` ego pose, ego-motion fields, declared result
+capacities, and an aligned camera tensor payload. Synthetic calibration matrices
+are deterministic identities plus camera offsets.
 
 FNV detects accidental corruption; it is not a cryptographic signature.

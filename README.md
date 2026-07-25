@@ -23,6 +23,7 @@ Useful commands:
 ```sh
 ./build/uniad doctor
 ./build/uniad inspect-model build/demo/demo.uaw
+./build/uniad inspect-model --production
 ./build/uniad benchmark --dir build/demo --warmup 2 --runs 10
 ./build/uniad infer --profile production
 ```
