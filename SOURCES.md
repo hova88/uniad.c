@@ -8,8 +8,16 @@ configuration. The upstream source is Apache-2.0:
 - pinned tree: https://github.com/OpenDriveLab/UniAD/tree/609ee083ea51c3521c323f1279dfc4cee0e60467
 - commit identity (SHA-256):
   `04dc11a82f7de530bd86fdac9bda0b4b65298e38d9732b74248ba84cf82b15a5`
+- CVPR 2023 paper:
+  https://openaccess.thecvf.com/content/CVPR2023/html/Hu_Planning-Oriented_Autonomous_Driving_CVPR_2023_paper.html
+- supplementary material:
+  https://openaccess.thecvf.com/content/CVPR2023/supplemental/Hu_Planning-Oriented_Autonomous_Driving_CVPR_2023_supplemental.pdf
 
 The SHA-256 above is the digest of the ASCII commit identifier, used as the
 stable profile provenance key. `tools/verify_provenance.py` checks it without
 network access. No upstream code, checkpoint, config file, dataset sample, or
 trademark asset is copied into this repository.
+
+The implementation-level findings used by the technical article are summarized
+in `evidence/uniad-architecture-study.md`. That note separates upstream
+architecture facts from the executable synthetic C profile.
