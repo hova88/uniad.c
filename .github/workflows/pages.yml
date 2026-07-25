@@ -1,9 +1,7 @@
 name: Pages
 on:
   push:
-    # Publish the review branch so the technical article is directly usable
-    # before the implementation PR is merged. main takes over after merge.
-    branches: [main, agent/uniad-unbox]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
