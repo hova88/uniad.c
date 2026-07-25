@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 extern ua_status ua_write_demo_assets(const char *directory);
@@ -29,7 +30,11 @@ int main(void) {
         ua_op_softmax(logits, 1, 2);
         assert(logits[0] == .5f && logits[1] == .5f);
     }
-    assert(mkdtemp(tmp));
+    {
+        int fd = mkstemp(tmp);
+        assert(fd >= 0); close(fd); assert(unlink(tmp) == 0);
+        assert(mkdir(tmp, 0700) == 0);
+    }
     assert(ua_write_demo_assets(tmp) == UA_OK);
     path(model_path, sizeof(model_path), tmp, "demo.uaw");
     path(f0_path, sizeof(f0_path), tmp, "frame0.uaf");
