@@ -33,5 +33,7 @@ explicit backend boundary (`CUDA=ON`); requesting an unavailable backend fails
 instead of falling back. See [the technical article](docs/index.html), the
 [model contract](evidence/model-contract.md), and [limitations](LIMITATIONS.md).
 
+Live technical article: https://hova88.github.io/uniad.c/
+
 Apache-2.0. This repository contains original clean-room code and documentation;
 upstream provenance is recorded in [SOURCES.md](SOURCES.md).
