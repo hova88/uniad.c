@@ -1,105 +1,346 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="An evidence-bounded C11 synthetic vertical slice of UniAD">
-  <title>UniAD.c — representation flow, made inspectable</title>
+  <meta name="description" content="UniAD 从多摄像头、时序 BEV、统一查询到规划的完整拆解，以及一个可审计的 C11 垂直切片。">
+  <meta name="theme-color" content="#f4f2ec">
+  <title>UniAD.c — 从像素到规划，一条可检查的路径</title>
   <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-  <a class="skip" href="#article">Skip to article</a>
-  <header class="hero">
-    <nav aria-label="Primary"><a class="mark" href="#">UA<span>.c</span></a>
-      <a href="#pipe">Pipeline</a><a href="#evidence">Evidence</a><a href="#inventory">Inventory</a>
+  <a class="skip" href="#article">跳到正文</a>
+  <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+
+  <header class="site-head">
+    <a class="brand" href="#" aria-label="UniAD.c 首页"><span>U</span>niAD.c</a>
+    <nav aria-label="主导航">
+      <a href="#thesis">方法</a><a href="#anatomy">架构</a><a href="#implementation">C 实现</a><a href="#evidence">证据</a>
     </nav>
-    <div class="hero-grid">
-      <div>
-        <p class="eyebrow">A synthetic vertical slice</p>
-        <h1>Representation flow,<br><em>made inspectable.</em></h1>
-        <p class="lede">A bounded C11 graph that follows six camera views through
-          temporal BEV, world heads, and ego planning—without pretending that a
-          tiny seeded demo is the released model.</p>
-        <div class="actions"><a class="button" href="#pipe">Trace the graph</a>
-          <a href="README.md">Read without JavaScript</a></div>
-      </div>
-      <div class="radar" aria-hidden="true"><div class="sweep"></div><i></i><i></i><i></i>
-        <b class="car"></b></div>
-    </div>
-    <div class="claim"><strong>Claim boundary</strong><span>synthetic graph equivalence</span>
-      <span>≠ checkpoint equivalence</span><span>≠ dataset accuracy</span></div>
+    <a class="source-link" href="https://github.com/hova88/uniad.c">GitHub ↗</a>
   </header>
 
   <main id="article">
-    <section id="pipe">
-      <div class="section-head"><p class="eyebrow">01 / Tensor pipe</p>
-        <h2>Same shape of thought.<br>Deliberately smaller numbers.</h2></div>
-      <div class="switch" role="group" aria-label="Pipeline profile">
-        <button aria-pressed="true" data-profile="demo">Runnable demo</button>
-        <button aria-pressed="false" data-profile="production">Production contract</button>
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="kicker">Architecture note · 2026.07</p>
+        <h1>从像素到规划，<br><em>一条可检查的路径。</em></h1>
+        <p class="dek">UniAD 不只是把五个任务放进同一张网络。它真正重要的设计，是让感知与预测以 <strong>query</strong> 为接口，沿着规划目标有方向地传递信息。</p>
+        <div class="hero-meta">
+          <span>阅读约 18 分钟</span><span>12 张程序化图解</span><span>零远程运行依赖</span>
+        </div>
       </div>
-      <ol class="pipeline" id="pipeline">
-        <li><small>Input</small><strong>6 × 3 × 8 × 8</strong><span>procedural camera planes</span></li>
-        <li><small>World memory</small><strong>8 × 8 × 16</strong><span>temporal BEV</span></li>
-        <li><small>Queries</small><strong>64 → top 8</strong><span>stable tracking selection</span></li>
-        <li><small>Future</small><strong>3 × 4</strong><span>motion modes × steps</span></li>
-        <li><small>Action</small><strong>6 points</strong><span>plan + collision score</span></li>
-      </ol>
+      <figure class="hero-figure" aria-labelledby="hero-cap">
+        <svg viewBox="0 0 720 640" role="img">
+          <title>六路相机汇入鸟瞰图，并生成规划轨迹</title>
+          <defs>
+            <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+              <path d="M28 0H0V28" fill="none" stroke="currentColor" stroke-opacity=".12"/>
+            </pattern>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0 0l10 5-10 5z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g class="camera-fan">
+            <path d="M360 320L92 86L28 202Z"/><path d="M360 320L260 28L142 58Z"/>
+            <path d="M360 320L460 28L578 58Z"/><path d="M360 320L628 86L692 202Z"/>
+            <path d="M360 320L692 438L650 552Z"/><path d="M360 320L28 438L70 552Z"/>
+          </g>
+          <rect class="bev-plane" x="118" y="86" width="484" height="484" rx="2"/>
+          <rect class="bev-grid" x="118" y="86" width="484" height="484" fill="url(#grid)"/>
+          <g class="lanes"><path d="M254 570C280 476 274 382 242 282C220 212 232 148 268 86"/>
+            <path d="M466 570C440 476 446 382 478 282C500 212 488 148 452 86"/></g>
+          <g class="actors"><rect x="224" y="250" width="20" height="34"/><rect x="448" y="198" width="20" height="34"/>
+            <rect x="390" y="366" width="20" height="34"/><rect x="292" y="130" width="20" height="34"/></g>
+          <g class="predictions"><path d="M234 248c-2-38 4-72 18-104"/><path d="M458 196c10-34 28-62 54-84"/>
+            <path d="M400 364c18-28 42-46 72-56"/></g>
+          <rect class="ego" x="344" y="492" width="32" height="58" rx="4"/>
+          <path class="plan-path" d="M360 492C362 442 346 406 352 358C360 294 400 264 406 206C412 160 392 124 384 92" marker-end="url(#arrow)"/>
+          <g class="query-orbits"><circle cx="360" cy="320" r="84"/><circle cx="360" cy="320" r="146"/></g>
+          <g class="query-dots"><circle cx="420" cy="262" r="5"/><circle cx="276" cy="330" r="5"/>
+            <circle cx="382" cy="462" r="5"/><circle cx="488" cy="390" r="5"/><circle cx="320" cy="176" r="5"/></g>
+          <text x="136" y="116">BEV WORLD STATE</text><text x="382" y="536">EGO</text>
+        </svg>
+        <figcaption id="hero-cap"><b>Fig. 01</b> 六路图像先压进统一的 BEV 世界状态；任务之间传递的是可学习的查询，而不是彼此割裂的最终结果。</figcaption>
+      </figure>
+      <div class="claim-strip" role="note">
+        <b>本文的边界</b>
+        <span><i class="yes"></i> 解释上游生产架构</span>
+        <span><i class="yes"></i> 运行合成 C11 切片</span>
+        <span><i class="no"></i> 不声称复现权重或精度</span>
+      </div>
+    </header>
+
+    <section class="chapter intro" id="thesis">
+      <aside class="chapter-no">01</aside>
+      <div class="prose">
+        <p class="overline">The thesis</p>
+        <h2>关键不是「全栈」，<br>而是「面向规划」。</h2>
+        <p class="lead">传统流水线逐级交付离散结果；普通多任务网络共享 backbone，随后各自离开。UniAD 选择第三条路：上游任务产生的表示继续进入下游，最后所有梯度都能围绕 ego planning 协调。</p>
+        <p>这改变了接口的含义。跟踪不只输出 3D 框，还提供带身份连续性的 agent query；在线地图不只输出折线，还提供 map query；运动预测在二者之间显式建模交互；占用预测把稀疏 agent 表示重新投回稠密空间；规划器最后读取自车、命令和环境风险。</p>
+      </div>
+      <aside class="sidenote"><span>核心判断</span>UniAD 是有层级依赖的多任务系统，不是五个平行 head 的集合。</aside>
+
+      <figure class="wide framework-compare">
+        <div class="compare-item">
+          <div class="mini-flow isolated"><i>感知</i><i>预测</i><i>规划</i></div>
+          <h3>模块流水线</h3><p>接口清楚，但误差逐级冻结。</p>
+        </div>
+        <div class="compare-item">
+          <div class="mini-flow multitask"><i>共享表征</i><span><b>检测</b><b>地图</b><b>运动</b></span></div>
+          <h3>平行多任务</h3><p>共享计算，但任务间通信有限。</p>
+        </div>
+        <div class="compare-item chosen">
+          <div class="mini-flow uniad"><i>BEV</i><b>Track</b><b>Motion</b><b>Plan</b><span>Map / Occ</span></div>
+          <h3>UniAD</h3><p>查询沿任务依赖流向最终规划。</p>
+        </div>
+        <figcaption><b>Fig. 02</b> 三种系统的区别，不在模块名字，而在信息与梯度如何流动。</figcaption>
+      </figure>
     </section>
 
-    <section class="dark" id="residency">
-      <div class="section-head"><p class="eyebrow">02 / Temporal state</p>
-        <h2>One frame remembers.<br>The scene key decides.</h2></div>
-      <div class="residency-grid">
-        <div class="route"><span>frame t−1</span><b>context-owned<br>previous BEV</b>
-          <span class="arrow">scene match → warp</span><b>current BEV</b><span>frame t</span></div>
-        <dl><div><dt>Resident</dt><dd>weights + 4 KiB state</dd></div>
-          <div><dt>Scratch</dt><dd>two bounded BEV buffers</dd></div>
-          <div><dt>Reset</dt><dd>explicit or new scene</dd></div>
-          <div><dt>CPU gate</dt><dd>≤ 256 MiB owned</dd></div></dl>
+    <section class="chapter" id="anatomy">
+      <aside class="chapter-no">02</aside>
+      <div class="prose">
+        <p class="overline">One frame, end to end</p>
+        <h2>先看完整路径，<br>再拆每一个齿轮。</h2>
+        <p class="lead">一帧由 6 个环视相机开始。图像 backbone 与 FPN 提取多尺度特征，BEVFormer 风格编码器结合相机标定，把透视图像组织成 <code>200 × 200 × 256</code> 的鸟瞰状态。</p>
+      </div>
+      <div class="wide stage-explorer">
+        <div class="stage-tabs" role="tablist" aria-label="UniAD pipeline stages">
+          <button role="tab" aria-selected="true" data-stage="0"><span>01</span>Image</button>
+          <button role="tab" aria-selected="false" data-stage="1"><span>02</span>BEV</button>
+          <button role="tab" aria-selected="false" data-stage="2"><span>03</span>Track + Map</button>
+          <button role="tab" aria-selected="false" data-stage="3"><span>04</span>Motion + Occ</button>
+          <button role="tab" aria-selected="false" data-stage="4"><span>05</span>Plan</button>
+        </div>
+        <div class="stage-canvas" id="stage-canvas" aria-live="polite"></div>
+        <div class="stage-readout"><span id="stage-shape">6 × image pyramid</span><p id="stage-copy">六路 BGR 图像经 ResNet-101 与 FPN 形成多尺度相机特征；标定元数据决定每个 BEV query 应该从哪里采样。</p></div>
       </div>
     </section>
 
-    <section id="evidence">
-      <div class="section-head"><p class="eyebrow">03 / Correctness funnel</p>
-        <h2>Every claim has<br>a smaller mouth.</h2></div>
-      <div class="funnel" aria-label="Correctness levels">
-        <div><b>Container safety</b><span>magic · bounds · finite · checksum</span></div>
-        <div><b>Operator fixtures</b><span>scalar C ↔ PyTorch</span></div>
-        <div><b>Tiny graph equivalence</b><span>two frames · temporal carry</span></div>
-        <div class="missing"><b>Production equivalence</b><span>missing compatible export</span></div>
-        <div class="missing"><b>Task accuracy</b><span>no dataset or metric claim</span></div>
+    <section class="chapter temporal" id="temporal">
+      <aside class="chapter-no">03</aside>
+      <div class="prose">
+        <p class="overline">Temporal BEV</p>
+        <h2>世界状态不是一张图，<br>而是一段记忆。</h2>
+        <p>当前 BEV query 同时读取多相机空间特征与上一帧 BEV。上一帧状态先按 ego motion 对齐，避免把自车移动误认为整个世界移动。空间交叉注意力解决“从哪些相机、哪些尺度取信息”；时序自注意力解决“过去保留什么”。</p>
+        <div class="equation"><span>B<sub>t</sub></span><b>=</b><span>Encoder(Q<sub>bev</sub>, F<sub>cam</sub>, Warp(B<sub>t−1</sub>, Δpose))</span></div>
+      </div>
+      <aside class="sidenote"><span>坐标系</span>所有下游任务在 ego-centric metric BEV 中交流；时间对齐发生在进入当前状态之前。</aside>
+      <figure class="wide temporal-figure">
+        <div class="frame old"><small>t − 1</small><div class="grid-plane"><i></i><i></i><i></i></div></div>
+        <div class="motion-arrow"><span>Δx · Δy · Δyaw</span><b>ego-motion warp</b></div>
+        <div class="frame aligned"><small>aligned memory</small><div class="grid-plane"><i></i><i></i><i></i></div></div>
+        <div class="attention-symbol">+</div>
+        <div class="frame current"><small>t</small><div class="grid-plane"><i></i><i></i><i></i></div></div>
+        <figcaption><b>Fig. 03</b> 时序融合的第一原则是坐标对齐。合成 C 实现保留整数平移 warp，但明确不实现 yaw。</figcaption>
+      </figure>
+    </section>
+
+    <section class="chapter modules" id="modules">
+      <aside class="chapter-no">04</aside>
+      <div class="prose">
+        <p class="overline">Five coupled modules</p>
+        <h2>五个模块，<br>一组逐渐具体的查询。</h2>
+        <p class="lead">点击模块可展开它读取什么、生成什么，以及为什么规划器需要它。箭头代表表示依赖，不代表简单的后处理顺序。</p>
+      </div>
+      <div class="wide module-map">
+        <svg viewBox="0 0 1100 330" role="img" aria-label="UniAD 模块依赖图">
+          <defs><marker id="m-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0l10 5-10 5z"/></marker></defs>
+          <g class="module-lines">
+            <path d="M182 95H296"/><path d="M182 245H296"/><path d="M456 95H570"/>
+            <path d="M456 245C520 245 510 130 570 130"/><path d="M730 105H914"/>
+            <path d="M730 105C818 105 806 245 914 245"/><path d="M730 245H914"/>
+          </g>
+          <g class="node"><rect x="22" y="50" width="160" height="90"/><text x="42" y="82">TRACKFORMER</text><text class="node-sub" x="42" y="111">agent queries</text></g>
+          <g class="node"><rect x="22" y="200" width="160" height="90"/><text x="42" y="232">MAPFORMER</text><text class="node-sub" x="42" y="261">map queries</text></g>
+          <g class="node accent-node"><rect x="296" y="50" width="160" height="240"/><text x="316" y="82">MOTIONFORMER</text><text class="node-sub" x="316" y="111">agent · map · goal</text><text class="node-big" x="316" y="212">6 × 12</text><text class="node-sub" x="316" y="239">modes × steps</text></g>
+          <g class="node"><rect x="570" y="60" width="160" height="90"/><text x="590" y="92">EGO QUERY</text><text class="node-sub" x="590" y="121">SDC + command</text></g>
+          <g class="node"><rect x="570" y="200" width="160" height="90"/><text x="590" y="232">OCCFORMER</text><text class="node-sub" x="590" y="261">dense future masks</text></g>
+          <g class="node final-node"><rect x="914" y="50" width="160" height="240"/><text x="934" y="82">PLANNER</text><text class="node-sub" x="934" y="111">6 waypoints</text><path d="M950 250c22-66 62-90 88-156"/></g>
+        </svg>
+      </div>
+      <div class="module-details">
+        <details open><summary><span>4.1</span> TrackFormer — 让物体跨帧保持身份</summary><div><p><b>输入</b> BEV feature + 900 个初始 object queries + 延续的 track queries。</p><p><b>输出</b> 动态数量的 agent features、位置、3D box、类别与速度。新 query 负责发现，存活 query 负责延续，避免每帧检测后再做独立关联。</p></div></details>
+        <details><summary><span>4.2</span> MapFormer — 把静态几何变成可交流的 query</summary><div><p><b>输入</b> BEV feature + 300 个 map queries。</p><p><b>输出</b> 车道分隔、道路边界、人行横道等在线矢量化元素及其 map features。它们随后进入 MotionFormer，成为 agent 运动的几何约束。</p></div></details>
+        <details><summary><span>4.3</span> MotionFormer — 交互，而不只是外推</summary><div><p><b>输入</b> agent query、map query、agent position 与场景/agent 级轨迹 anchors。</p><p><b>过程</b> 依次进行 agent–agent、agent–map、agent–goal 三类交互；每个 agent 保留 6 个未来模态。</p><p><b>输出</b> 每个 agent 的 <code>6 × 12 × 2</code> 轨迹与概率，同时产生供占用和规划使用的 motion query。</p></div></details>
+        <details><summary><span>4.4</span> OccFormer — 从稀疏参与者回到稠密风险场</summary><div><p><b>输入</b> 当前 BEV、按模态聚合的 motion query 与 agent feature。</p><p><b>过程</b> 递归预测未来 BEV；pixel–agent interaction 把参与者信息写入低分辨率稠密特征，再解码到 <code>200 × 200</code>。</p><p><b>输出</b> 未来 5 个时间步的 instance-level 与合并 occupancy。后者为规划提供不依赖类别的碰撞界面。</p></div></details>
+        <details><summary><span>4.5</span> Planner — 把所有表示收束为 6 个点</summary><div><p><b>输入</b> SDC query、导航 command、BEV 环境表示和未来 occupancy。</p><p><b>输出</b> 未来 6 个 ego waypoints。学习到的轨迹先形成，再通过 occupancy-aware cost 约束碰撞风险；训练目标包含 imitation 与 collision 项。</p></div></details>
       </div>
     </section>
 
-    <section class="dark" id="visual">
-      <div class="section-head"><p class="eyebrow">04 / Canonical result</p>
-        <h2>One result drives<br>tests and pixels.</h2></div>
-      <div class="viz-grid">
-        <canvas id="bev" width="720" height="520" aria-label="Animated bird's-eye-view result"></canvas>
-        <div class="legend"><p><i class="track-dot"></i> tracked actors</p>
-          <p><i class="motion-line"></i> predicted modes</p>
-          <p><i class="plan-line"></i> ego plan</p>
-          <p id="viz-status">Loading canonical result…</p></div>
+    <section class="chapter motion" id="motion">
+      <aside class="chapter-no">05</aside>
+      <div class="prose">
+        <p class="overline">Inside MotionFormer</p>
+        <h2>一条未来不够，<br>交互才是预测的主体。</h2>
+        <p>同一辆车可能直行、减速或转弯。UniAD 用场景级与 agent 级 anchors 初始化多模态 query，再依次聚合其他参与者、地图与目标点的信息。这里的关键不是“画出六条线”，而是每条线都在共享场景约束下被更新。</p>
       </div>
-      <noscript><p>The visualization needs JavaScript. The same result schema and
-        explanation remain available in <a href="README.md">the Markdown article</a>.</p></noscript>
+      <figure class="wide motion-figure">
+        <div class="interaction-row"><span class="token agent">A</span><div><b>Agent ↔ Agent</b><small>让行、跟车、冲突关系</small></div><i>01</i></div>
+        <div class="interaction-row"><span class="token map">M</span><div><b>Agent ↔ Map</b><small>车道拓扑与可行空间</small></div><i>02</i></div>
+        <div class="interaction-row"><span class="token goal">G</span><div><b>Agent ↔ Goal</b><small>多模态终点与轨迹 anchor</small></div><i>03</i></div>
+        <div class="trajectory-field">
+          <span class="origin"></span>
+          <svg viewBox="0 0 520 250" aria-label="六条多模态预测轨迹">
+            <path d="M45 205C160 194 280 178 474 62"/><path d="M45 205C170 198 300 196 480 188"/>
+            <path d="M45 205C155 188 260 128 390 35"/><path d="M45 205C158 212 292 222 472 224"/>
+            <path d="M45 205C158 184 276 150 474 118"/><path d="M45 205C160 202 294 186 480 158"/>
+          </svg>
+          <div class="prob"><span style="--p:88%">p₁ .31</span><span style="--p:70%">p₂ .24</span><span style="--p:53%">p₃ .18</span><span style="--p:29%">others</span></div>
+        </div>
+        <figcaption><b>Fig. 05</b> 多模态是结构化的不确定性，不是把一条回归曲线复制六次。</figcaption>
+      </figure>
     </section>
 
-    <section id="inventory">
-      <div class="section-head"><p class="eyebrow">05 / Operator inventory</p>
-        <h2>Search the gap<br>between demo and release.</h2></div>
-      <label class="search">Filter operators <input id="filter" type="search"
-        placeholder="attention, motion, CPU…" autocomplete="off"></label>
-      <div class="table-wrap"><table><thead><tr><th>Operator</th><th>Production</th>
-        <th>Demo</th><th>Route</th></tr></thead><tbody id="operators">
-          <tr><td>camera projection</td><td>ResNet-101 + FPN</td><td>weighted scalar projection</td><td>CPU</td></tr>
-          <tr><td>temporal attention</td><td>deformable attention</td><td>scene-keyed carry</td><td>CPU</td></tr>
-        </tbody></table></div>
+    <section class="chapter occupancy" id="occupancy">
+      <aside class="chapter-no">06</aside>
+      <div class="prose">
+        <p class="overline">Sparse → dense → action</p>
+        <h2>为什么既要轨迹，<br>又要占用？</h2>
+        <p>轨迹适合表达已识别 agent 的意图；occupancy 适合表达“这块空间未来是否安全”，包括难以稳定分类或关联的区域。两种表示互补：MotionFormer 提供对象级解释，OccFormer 提供规划可直接查询的稠密风险。</p>
+      </div>
+      <div class="wide occupancy-sequence" aria-label="五步未来占用预测">
+        <div><small>t + 0</small><canvas class="occ" width="220" height="220" data-step="0"></canvas></div>
+        <div><small>t + 1</small><canvas class="occ" width="220" height="220" data-step="1"></canvas></div>
+        <div><small>t + 2</small><canvas class="occ" width="220" height="220" data-step="2"></canvas></div>
+        <div><small>t + 3</small><canvas class="occ" width="220" height="220" data-step="3"></canvas></div>
+        <div><small>t + 4</small><canvas class="occ" width="220" height="220" data-step="4"></canvas></div>
+      </div>
+    </section>
+
+    <section class="chapter training" id="training">
+      <aside class="chapter-no">07</aside>
+      <div class="prose">
+        <p class="overline">Optimization</p>
+        <h2>统一不等于<br>一次性训练。</h2>
+        <p class="lead">完整系统分两阶段优化。第一阶段建立可靠的感知表示；第二阶段加入运动、占用和规划，并让各任务损失共同塑造共享查询。这样既控制显存，也避免随机初始化的下游目标过早扰动感知。</p>
+      </div>
+      <div class="wide train-timeline">
+        <div class="phase"><span>Stage 1</span><b>Perception pretraining</b><p>TrackFormer + MapFormer<br>6 epochs · image backbone frozen</p></div>
+        <div class="phase active"><span>Stage 2</span><b>Joint optimization</b><p>Motion + Occupancy + Planning<br>20 epochs · planning-oriented losses</p></div>
+        <div class="loss-stack">
+          <p><i style="--w:84%"></i><span>L<sub>track</sub> · focal + L1</span></p>
+          <p><i style="--w:72%"></i><span>L<sub>map</sub> · cls + mask + dice</span></p>
+          <p><i style="--w:64%"></i><span>L<sub>motion</sub> · multimodal trajectory</span></p>
+          <p><i style="--w:78%"></i><span>L<sub>occ</sub> · BCE + dice</span></p>
+          <p><i style="--w:92%"></i><span>L<sub>plan</sub> · imitation + collision</span></p>
+        </div>
+      </div>
+      <div class="prose">
+        <div class="equation compact"><span>L</span><b>=</b><span>Σ λ<sub>task</sub> L<sub>task</sub></span></div>
+        <p>“planning-oriented” 并不表示只保留规划损失。恰恰相反，中间监督让查询保持可解释、可训练；规划目标负责决定这些任务为什么要彼此协作。</p>
+      </div>
+    </section>
+
+    <section class="chapter implementation" id="implementation">
+      <aside class="chapter-no">08</aside>
+      <div class="prose">
+        <p class="overline">The C11 vertical slice</p>
+        <h2>缩小数值，<br>保留表示流。</h2>
+        <p class="lead">UniAD.c 不是把 Python 模型“改写成 C”的伪装。它是一个有边界的合成垂直切片：用固定容量、种子权重和标量算子，验证时序状态、查询选择、五个输出面与序列化契约。</p>
+      </div>
+      <div class="wide profile-switch">
+        <div class="switch" role="group" aria-label="比较运行配置">
+          <button aria-pressed="true" data-profile="tiny">可运行切片</button>
+          <button aria-pressed="false" data-profile="production">上游契约</button>
+        </div>
+        <div class="tensor-pipe" id="tensor-pipe"></div>
+      </div>
+      <div class="prose">
+        <h3>一次 <code>ua_infer</code> 发生了什么</h3>
+        <ol class="code-walk">
+          <li><span>01</span><p><b>Camera projection</b>六路 <code>3×8×8</code> 平面按种子权重投影为 <code>8×8×16</code> BEV。</p></li>
+          <li><span>02</span><p><b>Temporal carry</b>若 scene key 连续，整数 ego translation 对齐上一帧并以 <code>.65/.35</code> 混合。</p></li>
+          <li><span>03</span><p><b>Spatial analogue</b>中心与四邻域采样模拟局部空间聚合；结果成为下一帧 resident state。</p></li>
+          <li><span>04</span><p><b>Query decode</b>64 个 BEV cell 形成候选，stable top-k 固定选出 8 个 tracks；四条 map elements 同源解码。</p></li>
+          <li><span>05</span><p><b>Future + action</b>每个 track 生成 3×4 模态，三帧 occupancy，最后由 command 生成 6 点 plan 与 collision score。</p></li>
+        </ol>
+      </div>
+      <aside class="sidenote warning"><span>故意缺失</span>无真实 backbone、deformable attention、checkpoint 映射、yaw warp、数据集评估或完整 device-resident CUDA 图。</aside>
+    </section>
+
+    <section class="chapter result" id="result">
+      <aside class="chapter-no">09</aside>
+      <div class="prose">
+        <p class="overline">Canonical output</p>
+        <h2>同一个结果，<br>驱动测试与像素。</h2>
+        <p>下图不是手工摆放的效果图。页面直接读取 CLI 使用的 canonical JSON schema：track、map、motion、occupancy、ego plan 与碰撞分数共用同一来源。</p>
+      </div>
+      <div class="wide bev-result">
+        <canvas id="bev" width="1100" height="660" aria-label="合成 UniAD 结果鸟瞰图"></canvas>
+        <div class="result-overlay">
+          <div><span>Frame</span><b id="frame-value">—</b></div>
+          <div><span>Tracks</span><b id="track-value">—</b></div>
+          <div><span>Collision</span><b id="collision-value">—</b></div>
+          <p><i class="dot track-dot"></i> agent<i class="dot motion-dot"></i> forecast<i class="dot plan-dot"></i> ego plan</p>
+        </div>
+      </div>
+      <noscript><p class="noscript">动态图需要 JavaScript；同样的架构与边界说明见 <a href="README.md">Markdown 版本</a>。</p></noscript>
+    </section>
+
+    <section class="chapter evidence" id="evidence">
+      <aside class="chapter-no">10</aside>
+      <div class="prose">
+        <p class="overline">Evidence, not vibes</p>
+        <h2>正确性是一架梯子，<br>不能跳级。</h2>
+        <p class="lead">容器安全、算子一致、合成图一致、生产 checkpoint 一致、数据集精度，是五个不同命题。当前仓库只把证据推进到第三层。</p>
+      </div>
+      <div class="wide evidence-ladder">
+        <div class="proven"><span>01</span><b>容器安全</b><p>magic · bounds · finite · checksum</p><i>verified</i></div>
+        <div class="proven"><span>02</span><b>算子 fixtures</b><p>scalar C ↔ PyTorch oracle</p><i>verified</i></div>
+        <div class="proven"><span>03</span><b>合成图等价</b><p>two frames · temporal carry · reset</p><i>verified</i></div>
+        <div><span>04</span><b>生产 checkpoint 等价</b><p>缺少 compatible export 与完整映射</p><i>unclaimed</i></div>
+        <div><span>05</span><b>任务精度</b><p>未运行官方 dataset / evaluator</p><i>unclaimed</i></div>
+      </div>
+      <div class="prose benchmark-note">
+        <h3>本机测量，只说明 tiny graph</h3>
+        <div class="metrics">
+          <p><span>CPU warm mean</span><b>0.0207 ms</b><small>20 runs</small></p>
+          <p><span>owned host</span><b>4,552 B</b><small>model + context</small></p>
+          <p><span>temporal state</span><b>4 KiB</b><small>8 × 8 × 16 FP32</small></p>
+        </div>
+        <p class="fineprint">测量日期 2026-07-25，RTX 4060 Ti 主机。CUDA 路径目前只验证显式传输 / kernel 边界，核心参考图仍在 CPU 执行，因此不能据此声称 GPU 加速。</p>
+      </div>
+    </section>
+
+    <section class="chapter inventory" id="inventory">
+      <aside class="chapter-no">11</aside>
+      <div class="prose">
+        <p class="overline">Operator ledger</p>
+        <h2>差距要可搜索，<br>也要可见。</h2>
+      </div>
+      <div class="wide">
+        <label class="search">筛选 operator / route / gap
+          <input id="filter" type="search" placeholder="例如：attention、motion、CPU" autocomplete="off">
+        </label>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Operator</th><th>上游生产语义</th><th>可运行切片</th><th>Route</th></tr></thead>
+          <tbody id="operators"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="chapter conclusion" id="conclusion">
+      <aside class="chapter-no">12</aside>
+      <div class="prose">
+        <p class="overline">What remains</p>
+        <h2>完整理解，<br>从承认缺口开始。</h2>
+        <p class="lead">这个项目已经能解释并运行 UniAD 的表示流，但还不是 UniAD 的生产推理引擎。真正的下一段工作是建立 checkpoint 名称 / shape / operator 映射，逐算子通过 oracle，再把完整图迁移到 device-resident backend。</p>
+        <div class="next-links"><a href="README.md">项目与构建说明 →</a><a href="https://github.com/hova88/uniad.c/blob/main/evidence/model-contract.md">模型契约 ↗</a><a href="https://github.com/hova88/uniad.c/blob/main/LIMITATIONS.md">限制与声明 ↗</a></div>
+      </div>
     </section>
   </main>
-  <footer><b>UniAD.c</b><span>Apache-2.0 · synthetic evidence · no remote runtime dependencies</span>
-    <a href="https://github.com/hova88/uniad.c">Source</a></footer>
+
+  <footer>
+    <div><a class="brand" href="#"><span>U</span>niAD.c</a><p>一个证据有界的 C11 合成垂直切片。</p></div>
+    <div><b>Primary references</b>
+      <a href="https://openaccess.thecvf.com/content/CVPR2023/html/Hu_Planning-Oriented_Autonomous_Driving_CVPR_2023_paper.html">CVPR 2023 paper ↗</a>
+      <a href="https://github.com/OpenDriveLab/UniAD/tree/609ee083ea51c3521c323f1279dfc4cee0e60467">Pinned upstream ↗</a>
+    </div>
+    <div><b>Design study</b><a href="https://siboehm.com/articles/22/CUDA-MMM">CUDA MMM worklog ↗</a><a href="https://thinkingmachines.ai/blog/lora/">LoRA Without Regret ↗</a></div>
+    <div class="footer-end"><span>Apache-2.0</span><span>No remote runtime dependencies</span><span>Last reviewed 2026.07.25</span></div>
+  </footer>
   <script src="assets/site.js"></script>
 </body>
 </html>
