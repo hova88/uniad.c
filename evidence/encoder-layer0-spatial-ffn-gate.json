@@ -1,0 +1,45 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "checkpoint": "uniad_base_e2e.pth",
+  "fixture": {
+    "images": "six zero uint8 BGR images normalized over 1600x900 and padded to 1600x928",
+    "camera_to_ego": "identity",
+    "intrinsic": [[1000,0,800],[0,1000,450],[0,0,1]],
+    "visible_queries_per_camera": 32
+  },
+  "spatial_attention": {
+    "shape": [1,40000,256],
+    "heads": 8,
+    "levels": [[116,200],[58,100],[29,50],[15,25]],
+    "points": 8,
+    "depth_anchors": 4,
+    "sample_count": 32,
+    "passing": 32
+  },
+  "norm1": {
+    "shape": [1,40000,256],
+    "sample_count": 32,
+    "passing": 32
+  },
+  "ffn": {
+    "shape": [1,40000,256],
+    "hidden_shape": [1,40000,512],
+    "activation": "ReLU",
+    "residual": true,
+    "sample_count": 32,
+    "passing": 32
+  },
+  "norm2": {
+    "shape": [1,40000,256],
+    "sample_count": 32,
+    "passing": 32
+  },
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "strict_pass": true,
+  "whole_process": {
+    "elapsed_seconds": 27.79,
+    "host_maxrss_kib": 367728,
+    "scope": "model load, all CUDA fixtures, and the complete real layer0 prefix; not stage-only or warm latency"
+  },
+  "claim_limit": "Selected 32-value windows only. Earlier visual gates include known failures, and layers1-5 plus continuous-frame state remain incomplete."
+}

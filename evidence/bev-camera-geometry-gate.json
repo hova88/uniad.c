@@ -1,0 +1,39 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "bev_shape": [200,200],
+  "pillars": 4,
+  "pc_range": [-51.2,-51.2,-5.0,51.2,51.2,3.0],
+  "reference_2d_shape": [40000,2],
+  "reference_3d_shape": [4,40000,3],
+  "reference_camera_shape": [6,40000,4,2],
+  "visibility_shape": [6,40000,4],
+  "calibration_fixture": {
+    "camera_to_ego": "identity",
+    "intrinsic": [[1000,0,800],[0,1000,450],[0,0,1]],
+    "image_shape": [900,1600]
+  },
+  "selected_sample": {
+    "camera": 0,
+    "query_yx": [99,99],
+    "depth": 3,
+    "normalized_xy": [0.4375,0.388888889],
+    "visible": true
+  },
+  "visibility_compaction": {
+    "counts_per_camera": [32,32,32,32,32,32],
+    "stable_order": true,
+    "camera0_indices": [
+      19696,19697,19698,19699,19700,19701,19702,19703,
+      19896,19897,19898,19899,19900,19901,19902,19903,
+      20096,20097,20098,20099,20100,20101,20102,20103,
+      20296,20297,20298,20299,20300,20301,20302,20303
+    ]
+  },
+  "entry_validation": [
+    "finite matrices",
+    "nondegenerate intrinsic diagonal",
+    "rigid orthonormal camera_to_ego",
+    "rigid orthonormal ego_pose"
+  ],
+  "strict_pass": true
+}

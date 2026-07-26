@@ -965,6 +965,22 @@ figcaption b { color: var(--ink); }
 .runtime-walk p { margin: 0; color: var(--muted); font-size: 13px; }
 .runtime-walk b { color: var(--ink); font: 600 10px var(--mono); margin-right: 8px; text-transform: uppercase; }
 .warning-note { border-color: var(--orange); }
+.production-runtime { border: 1px solid var(--ink); background: #f2f0e9; }
+.runtime-status-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+.runtime-status-grid article {
+  min-height: 154px; padding: 20px; border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line); background: rgba(255,255,255,.34);
+}
+.runtime-status-grid article:nth-child(3n) { border-right: 0; }
+.runtime-status-grid span {
+  display: block; color: var(--muted); font: 700 8px var(--mono);
+  letter-spacing: .12em; text-transform: uppercase;
+}
+.runtime-status-grid b { display: block; margin: 13px 0 8px; font: 600 20px var(--sans); }
+.runtime-status-grid p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.runtime-status-grid .passed { box-shadow: inset 4px 0 0 #5d8067; }
+.runtime-status-grid .blocked { box-shadow: inset 4px 0 0 var(--orange); }
+.production-runtime .explainer-takeaway a { color: inherit; font-weight: 700; }
 .canonical-figure { background: #13191c; border: 1px solid #13191c; color: white; }
 .canonical-header {
   min-height: 76px;
@@ -1611,6 +1627,10 @@ footer b { display: block; text-transform: uppercase; }
   .claim-boundary p:nth-of-type(3) { grid-column: 2; }
 }
 @media (max-width: 760px) {
+  .runtime-status-grid { grid-template-columns: 1fr; }
+  .runtime-status-grid article, .runtime-status-grid article:nth-child(3n) {
+    border-right: 0;
+  }
   body { font-size: 15px; }
   .topbar { height: 56px; padding: 0 20px; }
   .article-header { padding-top: 72px; }

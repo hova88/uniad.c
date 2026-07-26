@@ -1,0 +1,43 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "boundary": "production.resnet_layer4",
+  "checkpoint": "uniad_base_e2e.pth",
+  "input": "six all-zero uint8 BGR 1600x900 views",
+  "output_shape": [6, 2048, 29, 50],
+  "candidate": "packed-27 offset/mask scalar DCNv2, FP16 storage, FP32 accumulation",
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "strict_pass": false,
+  "nonfinite_scan": {
+    "blocks_scanned": 3,
+    "observed_first_nonfinite": 3,
+    "pass": true
+  },
+  "windows": [
+    {
+      "boundary": "block0",
+      "flat_offset": 0,
+      "sample_count": 32,
+      "passing_samples": 32,
+      "oracle_index_0": 1.35606754,
+      "candidate_index_0": 1.36621094
+    },
+    {
+      "boundary": "block2/final",
+      "flat_offset": 147,
+      "sample_count": 32,
+      "passing_samples": 30,
+      "failing_samples": 2,
+      "first_failure": {
+        "window_index": 2,
+        "oracle": 1.65022302,
+        "candidate": 1.68652344
+      },
+      "second_failure": {
+        "window_index": 3,
+        "oracle": 0.634063601,
+        "candidate": 0.618164062
+      }
+    }
+  ],
+  "disposition": "full backbone executes and stays finite; Layer4 is not promoted to graph equivalence"
+}

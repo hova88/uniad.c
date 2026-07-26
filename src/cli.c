@@ -15,7 +15,7 @@ static void usage(FILE *f) {
         "commands:\n"
         "  doctor\n"
         "  generate-demo [directory]\n"
-        "  inspect-model <model.uaw>\n"
+        "  inspect-model <model.uaw> [--tensor checkpoint.key]\n"
         "  demo [--dir directory] [--backend cpu|cuda]\n"
         "  infer --profile production | --model M --frame F [--backend cpu|cuda]\n"
         "  benchmark [--dir directory] [--warmup N] [--runs N] [--backend cpu|cuda]\n");
@@ -159,7 +159,8 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(argv[1], "inspect-model")) {
         ua_model *m = NULL; ua_status s;
-        if (argc != 3) return 2;
+        if (argc != 3 && argc != 5) return 2;
+        if (argc == 5 && strcmp(argv[3], "--tensor")) return 2;
         if (!strcmp(argv[2], "--production")) {
             printf("{\"profile\":\"production-nuscenes-stage2\",\"executable\":false,"
                    "\"upstream_commit\":\"609ee083ea51c3521c323f1279dfc4cee0e60467\","
@@ -170,10 +171,32 @@ int main(int argc, char **argv) {
             return 0;
         }
         s = ua_model_load(argv[2], &m); if (s != UA_OK) return fail("inspect", s);
-        printf("{\"container\":\"UAW\",\"version\":1,\"profile\":\"%s\","
-               "\"seed\":%llu,\"tensors\":[{\"name\":\"demo.weights\","
-               "\"dtype\":\"f32\",\"shape\":[64],\"layout\":\"flat\"}]}\n",
-               ua_model_profile(m), (unsigned long long)ua_model_seed(m));
+        if (ua_model_tensor_count(m)) {
+            if (argc == 5) {
+                ua_tensor_info info; uint32_t i;
+                s = ua_model_find_tensor(m, argv[4], &info);
+                if (s != UA_OK) { ua_model_destroy(m); return fail("tensor", s); }
+                printf("{\"container\":\"UAW2\",\"tensor_count\":%u,"
+                       "\"dtype\":%u,\"rank\":%u,\"shape\":[",
+                       ua_model_tensor_count(m), info.dtype, info.rank);
+                for (i = 0; i < info.rank; ++i)
+                    printf("%s%llu", i ? "," : "",
+                           (unsigned long long)info.dims[i]);
+                printf("],\"byte_offset\":%llu,\"nbytes\":%llu}\n",
+                       (unsigned long long)info.byte_offset,
+                       (unsigned long long)info.nbytes);
+            } else {
+                printf("{\"container\":\"UAW2\",\"version\":2,\"profile\":\"%s\","
+                       "\"tensor_count\":%u,\"executable_graph\":false,"
+                       "\"cuda_residency\":true}\n",
+                       ua_model_profile(m), ua_model_tensor_count(m));
+            }
+        }
+        else
+            printf("{\"container\":\"UAW1\",\"version\":1,\"profile\":\"%s\","
+                   "\"seed\":%llu,\"tensors\":[{\"name\":\"demo.weights\","
+                   "\"dtype\":\"f32\",\"shape\":[64],\"layout\":\"flat\"}]}\n",
+                   ua_model_profile(m), (unsigned long long)ua_model_seed(m));
         ua_model_destroy(m); return 0;
     }
     if (!strcmp(argv[1], "demo")) return command_demo(argc, argv);

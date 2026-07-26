@@ -1,0 +1,44 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "boundary": "production.resnet_layer3",
+  "checkpoint": "uniad_base_e2e.pth",
+  "input": "six all-zero uint8 BGR 1600x900 views",
+  "output_shape": [6, 1024, 58, 100],
+  "candidate": "packed-27 offset/mask scalar DCNv2, FP16 storage, FP32 accumulation",
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "strict_pass": true,
+  "nonfinite_scan": {
+    "blocks_scanned": 23,
+    "first_nonfinite_sentinel": 23,
+    "observed_first_nonfinite": 23,
+    "pass": true
+  },
+  "windows": [
+    {
+      "boundary": "block0",
+      "flat_offset": 5697,
+      "sample_count": 32,
+      "passing_samples": 32,
+      "oracle_nonzero_index_2": 0.195338011,
+      "candidate_nonzero_index_2": 0.196533203
+    },
+    {
+      "boundary": "block22/final",
+      "flat_offset": 195,
+      "sample_count": 32,
+      "passing_samples": 32,
+      "oracle_nonzero_index_2": 0.211586952,
+      "candidate_nonzero_index_2": 0.211914062
+    }
+  ],
+  "rejected_candidates": [
+    {
+      "name": "split-pointer view over packed [N,27,H,W]",
+      "observed_first_nonfinite_block": 11,
+      "final_window_contains_inf": true,
+      "root_cause": "mask base and per-batch strides assumed separately packed [N,18] and [N,9] arrays",
+      "disposition": "rejected and replaced by explicit packed-27 indexing"
+    }
+  ],
+  "claim_limit": "selected deterministic windows pass; this does not establish every Layer3 element or downstream graph equivalence"
+}

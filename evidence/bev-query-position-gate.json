@@ -1,0 +1,19 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "checkpoint": "uniad_base_e2e.pth",
+  "input_can_bus": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  "bev_queries": {
+    "shape": [40000,256],
+    "operation": "released FP16 query plus FP32 18->128->256 ReLU MLP and LayerNorm",
+    "sample_count": 32,
+    "passing": 32
+  },
+  "bev_position": {
+    "shape": [40000,256],
+    "layout": "token=y*200+x; channels 0:128=column[x], 128:256=row[y]",
+    "sample_count": 32,
+    "passing": 32
+  },
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "strict_pass": true
+}

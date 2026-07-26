@@ -19,7 +19,7 @@
       <a href="#system">System</a>
       <a href="#queries">Queries</a>
       <a href="#planning">Planning</a>
-      <a href="#runtime">C11</a>
+      <a href="#runtime">Runtime</a>
     </nav>
     <a class="repo-link" href="https://github.com/hova88/uniad.c">Source ↗</a>
   </header>
@@ -94,7 +94,8 @@
     <span>Claim boundary</span>
     <p><b>Production architecture</b> comes from the paper, supplement, and pinned source.</p>
     <p><b>Executable demo</b> is a reduced synthetic C11 graph.</p>
-    <p><b>Not claimed:</b> released-weight equivalence or nuScenes accuracy.</p>
+    <p><b>Production work in progress:</b> released weights are parsed and resident; the complete first-frame six-layer BEVFormer encoder, all six TrackFormer decoder/reference-refinement layers, and final track output heads now execute after ResNet-101/FPN. Negative numerical gates remain explicit.</p>
+    <p><b>Not claimed:</b> released-weight graph equivalence, production latency, or nuScenes accuracy.</p>
   </div>
 
   <aside class="toc" aria-label="Article contents">
@@ -109,7 +110,7 @@
     <a href="#planning" data-toc>08　Planning</a>
     <a href="#training" data-toc>09　Learning</a>
     <a href="#evidence" data-toc>10　Evidence</a>
-    <a href="#runtime" data-toc>11　C11</a>
+    <a href="#runtime" data-toc>11　Runtime</a>
   </aside>
 
   <main id="article">
@@ -539,11 +540,11 @@
 
     <section class="essay-section" id="runtime" data-section>
       <div class="copy">
-        <p class="section-label">11 / UniAD.c</p>
+        <p class="section-label">11 / UniAD.c runtime</p>
         <p class="section-question"><span>The evidence problem</span>What can this repository actually prove—and can the reader inspect the exact result rather than trust a decorative rendering?</p>
         <h2>What remains,<br>and what is deliberately absent.</h2>
-        <p class="lead">The C11 program in this repository is a representation-flow vertical slice, not a port of the released checkpoint. It reduces every tensor and uses deterministic scalar operators so state lifetime, input containers, and the result schema remain auditable.</p>
-        <p class="answer"><span>Answer 11</span>It can prove a deterministic data contract and oracle agreement for the tiny graph. Figure 11 exposes the canonical record—including its awkward synthetic geometry—instead of pretending it is production output.</p>
+        <p class="lead">The stable C11 path remains a representation-flow vertical slice. Beside it, a versioned production path now parses all released checkpoint tensors, keeps CUDA state resident, and gates individual CUDA operators against scalar references. That second path still rejects inference because its full learned graph is incomplete.</p>
+        <p class="answer"><span>Answer 11</span>The repository proves the tiny graph end to end, nineteen production CUDA operator boundaries, the complete released-weight visual prefix, selected-window parity across all six first-frame BEVFormer encoder and TrackFormer decoder/reference-refinement layers, plus final track heads, filtering and QueryInteraction. Several strict visual gates remain negative; continuous-frame temporal equivalence, full track lifecycle/decode equivalence, and decoded-result equivalence remain unproved.</p>
       </div>
       <div class="wide-figure explainer contract-explainer" style="--wipe: 38%">
         <header class="explainer-head">
@@ -575,6 +576,60 @@
         </div>
         <div class="explainer-takeaway"><span>Same route, different operators</span><p>The columns align semantically, but tensor scale, learned operators, weights, and evaluator coverage diverge at every stage.</p></div>
       </div>
+      <div class="wide-figure production-runtime">
+        <header class="explainer-head">
+          <p><span>Measured locally · RTX 4060 Ti</span>Production implementation ledger</p>
+          <small>Each “passed” entry is backed by a runnable fixture, not source presence alone.</small>
+        </header>
+        <div class="runtime-status-grid">
+          <article><span>PyTorch oracle</span><b>2,230 / 5,974</b><p>inference / training module calls recorded from real six-camera mini samples</p></article>
+          <article><span>Unique signatures</span><b>710</b><p>operator + shape + stride + dtype + layout boundaries</p></article>
+          <article><span>Checkpoint map</span><b>2,451 / 2,459</b><p>keys with an observed runtime consumer in inference or training</p></article>
+          <article><span>UAW2 container</span><b>264,909,568 B</b><p>2,459 aligned tensors with structural and per-tensor checksums</p></article>
+          <article class="passed"><span>Runtime lookup</span><b>Exact key → offset</b><p>validated dtype, rank, shape, relative byte offset, and byte length</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>BGR → FP16</b><p>strided input, normalize, planar conversion, and padding</p></article>
+          <article class="passed"><span>Production entry</span><b>25,920,760 B H2D</b><p>six pitched images plus fixed calibration, pose, CAN, command, time, and scene metadata</p></article>
+          <article class="passed"><span>Scene state</span><b>Explicit reset</b><p>scene switch clears previous BEV and track memory on the context stream</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>FP16 Linear</b><p>row-major out×in weights and deterministic FP32 accumulation</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>FP16 Conv2d</b><p>NCHW/OIHW, bias, padding, stride, and FP32 accumulation</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>LayerNorm</b><p>FP16 affine storage, FP32 mean and variance, dim 256 oracle gate</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>FP32 Softmax</b><p>stable large-logit path plus NaN/Inf rejection</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>Bilinear resize</b><p>half-pixel coordinates and zero-valued boundary sampling</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>Deform gather</b><p>HWC multi-channel fractional and out-of-range sampling</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>Stable TopK</b><p>deterministic index order under equal scores</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>MS deform core</b><p>FP16 values, normalized multi-level sampling, FP32 accumulation</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>Modulated DCNv2</b><p>MMCV-verified offset order, mask, stride, padding, dilation, and gather-conv</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>Deform locations</b><p>2D points and 4D boxes with exact width/height normalization</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>Camera scatter</b><p>variable visibility lists and per-query observation averaging</p></article>
+          <article class="passed"><span>CUDA fixture</span><b>Temporal fuse</b><p>previous/current queue folding and deterministic mean</p></article>
+          <article class="passed"><span>Released-weight graph</span><b>ResNet stem</b><p>full-size Conv–mixed BN–ReLU–MaxPool agrees with a PyTorch boundary oracle</p></article>
+          <article class="blocked"><span>Negative numerical gate</span><b>Layer1 block2 · 31/32</b><p>block0 and block1 pass their windows; one block2 cancellation-sensitive sample exceeds the unchanged tolerance</p></article>
+          <article class="blocked"><span>Negative numerical gate</span><b>Layer2 block3 · 3/32 final</b><p>block0–2 windows pass; drift expands in block3 and the final prefix passes only three values</p></article>
+          <article class="passed"><span>Released-weight DCNv2</span><b>Layer3 · finite 23/23</b><p>packed-27 batch indexing fixes the rejected split-pointer ABI; block0 and block22 windows pass 32/32</p></article>
+          <article class="blocked"><span>Negative numerical gate</span><b>Layer4 · 30/32 final</b><p>the full backbone executes and retains all three FPN inputs, but two final-window values exceed tolerance</p></article>
+          <article class="blocked"><span>Real-weight FPN</span><b>Four device-resident levels</b><p>P0/P1/P2/P3 prefixes pass 30/32, 23/32, 32/32, and 16/32; execution is real, equivalence remains unclaimed</p></article>
+          <article class="blocked"><span>BEVFormer input</span><b>6 × 30,825 × 256</b><p>camera-first flatten plus released FP32 camera/level embeddings; per-level gates remain explicit</p></article>
+          <article class="passed"><span>BEV preparation</span><b>40,000 queries · 32/32</b><p>FP32 CAN MLP/LayerNorm and learned row/column positions both pass their strict windows</p></article>
+          <article class="passed"><span>Camera geometry</span><b>Stable sparse rebatch</b><p>960,000 pillar views plus deterministic per-camera query compaction pass a nondegenerate oracle</p></article>
+          <article class="passed"><span>Layer0 temporal attention</span><b>First frame · 32/32</b><p>two queues, eight heads, one level, four points, output projection and residual match the official PyTorch window</p></article>
+          <article class="passed"><span>Layer0 Norm0</span><b>32/32</b><p>fixed-order FP32 statistics plus released FP16 affine vectors match the official PyTorch window</p></article>
+          <article class="passed"><span>Layer0 spatial attention</span><b>32/32</b><p>six stable visibility lists, four FPN levels, eight heads and eight points use sequential camera scratch reuse</p></article>
+          <article class="passed"><span>Layer0 FFN</span><b>FFN + Norm2 · 32/32</b><p>released 256→512→256 ReLU/residual path completes the first encoder layer inside the 512 MiB arena</p></article>
+          <article class="passed"><span>BEVFormer encoder</span><b>Six layers · 32/32 each</b><p>all 156 layer tensors pass strict shape lookup; 36 internal windows survive arena reuse</p></article>
+          <article class="passed"><span>TrackFormer input</span><b>901 queries · 32/32</b><p>900 actor plus one ego position/content queries and normalized 3D references are device-resident</p></article>
+          <article class="passed"><span>Track decoder layer0</span><b>Six boundaries · 32/32</b><p>packed-QKV self-MHA, deformable BEV attention, FFN and three norms match PyTorch windows</p></article>
+          <article class="passed"><span>TrackFormer decoder</span><b>Six layers · 18×32/32</b><p>all layer endpoints, regression outputs and refined references match PyTorch from one hashed full-BEV boundary</p></article>
+          <article class="passed"><span>Track output heads</span><b>Three heads · 32/32 each</b><p>class logits, metric 10D boxes and 8×2 history offsets match PyTorch from hashed shared inputs</p></article>
+          <article class="passed"><span>Track activation filter</span><b>Scores/classes/count pass</b><p>FP32 sigmoid/max-class, released base-E2E threshold 0.4, stable query order and capacity 300 execute entirely on device</p></article>
+          <article class="passed"><span>Tracker state fixture</span><b>ID + five-miss retirement</b><p>thresholds 0.4/0.35, reserved SDC ID, deterministic allocation and active compaction pass exact tests</p></article>
+          <article class="passed"><span>Track state storage</span><b>2 × 1,201-query slabs</b><p>separate committed/candidate state reserves queries, references, boxes, IDs, counters and four-slot memory banks</p></article>
+          <article class="passed"><span>MemoryBank insertion</span><b>Period + mask + projection</b><p>strict score selection, three-frame countdown, four-slot shift and FP16 save projection pass a three-call fixture</p></article>
+          <article class="passed"><span>QueryInteraction</span><b>32 active · 32/32</b><p>released self-MHA, residual FFN and content update match PyTorch from one hashed decoder-state boundary</p></article>
+          <article class="passed"><span>Track numerical gate</span><b>24 boundaries pass</b><p>decoder/refinement, final heads and activation filter use hashed shared PyTorch inputs with explicit tolerances</p></article>
+          <article class="blocked"><span>Production graph</span><b>Rejected</b><p>track-ID/query/memory lifecycle, remaining task heads, transactional state commit and result decode remain incomplete</p></article>
+        </div>
+        <div class="explainer-takeaway"><span>Machine-readable evidence</span><p><a href="assets/production-operator-inventory.json">Open the 710-signature inventory</a>. CUDA Event spans overlap at nested module boundaries; CUPTI kernel activity was unavailable, so no kernel-time claim is derived from them.</p></div>
+      </div>
       <div class="copy">
         <h3>The actual path through <code>ua_infer</code></h3>
         <ol class="runtime-walk">
@@ -587,7 +642,7 @@
       </div>
       <aside class="margin-note warning-note">
         <b>What it does not contain</b>
-        <p>No ResNet/FPN, BEVFormer, deformable attention, query lifecycle, learned anchors, real OccFormer, checkpoint mapping, or official evaluator.</p>
+        <p>The released-weight prefix now completes all six first-frame encoder layers, all six TrackFormer decoder/reference-refinement layers, final track class/box/history heads and activation filtering. Selected oracle windows pass while some earlier visual boundaries retain explicit negative gates. Track-ID/query/memory lifecycle, the other task heads, transactional previous-BEV commit, result decode, and the official evaluator remain incomplete.</p>
       </aside>
       <figure class="wide-figure canonical-figure">
         <header class="canonical-header">
@@ -652,8 +707,8 @@
         <p class="section-label">12 / Correctness ladder</p>
         <p class="section-question"><span>The final question</span>When does “the demo runs” become evidence that the production model has been reproduced?</p>
         <h2>Evidence climbs one rung<br>at a time.</h2>
-        <p>The repository can establish safe container parsing, basic-operator agreement with an oracle, and correct temporal carry in a two-frame synthetic graph. None of those facts implies production-checkpoint equivalence or task accuracy on nuScenes.</p>
-        <p class="answer"><span>Answer 12</span>Only after export, operator coverage, tensor-by-tensor checkpoint comparison, and dataset evaluation. This repository intentionally stops three rungs earlier.</p>
+        <p>The repository establishes safe production-container parsing, an observed checkpoint-to-module map, nineteen production CUDA operator fixtures, an executable released-weight visual prefix, and selected-window parity through all six first-frame encoder and TrackFormer decoder/reference-refinement layers plus final track outputs/filtering and QueryInteraction. These facts still do not imply complete production-checkpoint graph equivalence or task accuracy on nuScenes.</p>
+        <p class="answer"><span>Answer 12</span>The next rung requires complete operator coverage and raw stage-tensor comparison across continuous scenes. Dataset evaluation remains a separate final gate.</p>
       </div>
       <div class="wide-figure explainer ladder-explainer">
         <header class="explainer-head">
@@ -662,9 +717,9 @@
         </header>
         <div class="proof-ladder" role="group" aria-label="Correctness evidence levels">
           <button class="proved" data-proof-rung="0" aria-pressed="false"><span>01</span><b>Container safety</b><i>proved</i></button>
-          <button class="proved" data-proof-rung="1" aria-pressed="false"><span>02</span><b>Operator fixtures</b><i>proved</i></button>
+          <button class="proved" data-proof-rung="1" aria-pressed="false"><span>02</span><b>Operator fixtures</b><i>partial</i></button>
           <button class="proved" data-proof-rung="2" aria-pressed="true"><span>03</span><b>Synthetic graph</b><i>proved</i></button>
-          <button data-proof-rung="3" aria-pressed="false"><span>04</span><b>Checkpoint equivalence</b><i>missing</i></button>
+          <button data-proof-rung="3" aria-pressed="false"><span>04</span><b>Checkpoint equivalence</b><i>mapping only</i></button>
           <button data-proof-rung="4" aria-pressed="false"><span>05</span><b>Task accuracy</b><i>unclaimed</i></button>
         </div>
         <div class="proof-reading" aria-live="polite"><span id="proof-status">Current ceiling</span><b id="proof-title">Synthetic graph</b><p id="proof-copy">Two-frame carry, reset behavior, and final JSON agree with an independent PyTorch oracle.</p></div>

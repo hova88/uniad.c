@@ -1,0 +1,34 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "checkpoint": "uniad_base_e2e.pth",
+  "query_contract": {
+    "count": 901,
+    "meaning": "900 actor queries plus one ego query",
+    "embedding_shape": [901,512],
+    "query_pos_shape": [901,256],
+    "query_shape": [901,256],
+    "reference_points_shape": [901,3]
+  },
+  "query_preparation": {
+    "query_pos": {"sample_count": 32, "passing": 32},
+    "query": {"sample_count": 32, "passing": 32},
+    "reference_points": {"sample_count": 32, "passing": 32}
+  },
+  "decoder_layer0": {
+    "self_attention": "packed QKV, 8 heads, 901x901 attention",
+    "cross_attention": "one 200x200 BEV level, 8 heads, 4 points",
+    "ffn": "256->512 ReLU->256 plus residual",
+    "windows": [
+      {"boundary": "self", "sample_count": 32, "passing": 32},
+      {"boundary": "norm0", "sample_count": 32, "passing": 32},
+      {"boundary": "cross", "sample_count": 32, "passing": 32},
+      {"boundary": "norm1", "sample_count": 32, "passing": 32},
+      {"boundary": "ffn", "sample_count": 32, "passing": 32},
+      {"boundary": "norm2", "sample_count": 32, "passing": 32}
+    ]
+  },
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "strict_pass": true,
+  "whole_process_seconds": 30.96,
+  "claim_limit": "Only decoder layer0 is implemented. Reference refinement, layers1-5, classification/regression heads, tracking state and decode remain incomplete."
+}
