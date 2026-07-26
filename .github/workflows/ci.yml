@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
       - name: Build and C tests
-        run: make test
+        run: make test-core
       - name: CMake parity
         run: cmake -S . -B build-cmake -DUNIAD_CUDA=OFF && cmake --build build-cmake && ctest --test-dir build-cmake --output-on-failure
   oracle:
@@ -25,7 +25,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
       - run: pip install --index-url https://download.pytorch.org/whl/cpu torch
-      - run: make && python3 tools/oracle.py --compare build/cpu/uniad --asset-dir build/oracle-demo
+      - run: |
+          make
+          UA_TEST_CLI=build/cpu/uniad python3 tests/test_uaw2.py
+          python3 tools/oracle.py --compare build/cpu/uniad --asset-dir build/oracle-demo
   site:
     runs-on: ubuntu-latest
     steps:
