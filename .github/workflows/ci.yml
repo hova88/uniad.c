@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
-      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch
+      - run: pip install numpy && pip install --index-url https://download.pytorch.org/whl/cpu torch
       - run: |
           make
           UA_TEST_CLI=build/cpu/uniad python3 tests/test_uaw2.py
