@@ -1,0 +1,41 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "boundary": "production.resnet_layer1",
+  "checkpoint": "uniad_base_e2e.pth",
+  "input": "six all-zero uint8 BGR 1600x900 views",
+  "output_shape": [6, 256, 232, 400],
+  "sample_count": 32,
+  "oracle": "PyTorch FP32 released checkpoint",
+  "candidate": "scalar FP16 storage, FP32 accumulation CUDA baseline",
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "passing_samples": 31,
+  "failing_samples": 1,
+  "first_failure": {
+    "flat_index": 2,
+    "candidate": 0.882324219,
+    "oracle": 0.858774781,
+    "absolute_error": 0.023549438,
+    "relative_error": 0.027421
+  },
+  "strict_pass": false,
+  "localization": {
+    "block0_nonzero_window": {"sample_count": 32, "strict_pass": true},
+    "block1_nonzero_window": {"sample_count": 32, "strict_pass": true},
+    "block2_prefix": {"sample_count": 32, "strict_pass": false}
+  },
+  "rejected_candidates": [
+    {
+      "name": "block2 FP32 BN/ReLU activation extension",
+      "parent_value_at_index_2": 0.882324219,
+      "candidate_value_at_index_2": 0.882812500,
+      "oracle_value_at_index_2": 0.858774781,
+      "reason": "preserving BN/ReLU activations in FP32 increased the cancellation-sensitive error"
+    }
+  ],
+  "disposition": "executable baseline retained for graph construction; not promoted to graph equivalence",
+  "next_actions": [
+    "compare block2 FP32-storage, FP16-storage and SM89 tensor-core policies",
+    "compare deterministic scalar, CUDA FP32-storage, FP16-storage and SM89 tensor-core accumulation policies",
+    "retain only a policy that passes the unchanged stage gate"
+  ]
+}

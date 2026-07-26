@@ -1,0 +1,16 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "boundary": "production.fpn",
+  "checkpoint": "uniad_base_e2e.pth",
+  "input": "retained ResNet Layer2/3/4 outputs from six zero BGR views",
+  "candidate": "FP16 lateral/output Conv, FP16 nearest top-down add, FP32 Conv accumulation",
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "outputs": [
+    {"level": 0, "shape": [6,256,116,200], "sample_count": 32, "passing": 30, "failing": 2},
+    {"level": 1, "shape": [6,256,58,100], "sample_count": 32, "passing": 23, "failing": 9},
+    {"level": 2, "shape": [6,256,29,50], "sample_count": 32, "passing": 32, "failing": 0},
+    {"level": 3, "shape": [6,256,15,25], "sample_count": 32, "passing": 16, "failing": 16}
+  ],
+  "strict_pass": false,
+  "disposition": "all four FPN levels execute and remain resident; only level 2 selected prefix passes completely"
+}

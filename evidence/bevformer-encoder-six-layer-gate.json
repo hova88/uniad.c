@@ -1,0 +1,27 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "checkpoint": "uniad_base_e2e.pth",
+  "mode": "eval-first-frame-prev-bev-none",
+  "layers": 6,
+  "keys_per_layer": 26,
+  "bytes_per_layer": 1646976,
+  "saved_boundaries_per_layer": [
+    "temporal", "norm0", "spatial", "norm1", "ffn", "norm2"
+  ],
+  "norm2_windows": [
+    {"layer": 0, "sample_count": 32, "passing": 32},
+    {"layer": 1, "sample_count": 32, "passing": 32},
+    {"layer": 2, "sample_count": 32, "passing": 32},
+    {"layer": 3, "sample_count": 32, "passing": 32},
+    {"layer": 4, "sample_count": 32, "passing": 32},
+    {"layer": 5, "sample_count": 32, "passing": 32}
+  ],
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "strict_pass": true,
+  "whole_process": {
+    "elapsed_seconds": 29.80,
+    "host_maxrss_kib": 367760,
+    "scope": "model load, fixture suite, visual prefix and all six encoder layers"
+  },
+  "claim_limit": "Selected windows only. Full-tensor graph equivalence and continuous-frame equivalence are not yet claimed."
+}

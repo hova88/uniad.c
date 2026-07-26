@@ -24,6 +24,14 @@ contract—not the numerical behavior of the released checkpoint.
 Correctness cannot skip levels. Container tests establish input safety;
 operator fixtures and a two-frame PyTorch oracle establish synthetic-graph
 equivalence. Neither establishes production-checkpoint equivalence or nuScenes
-task accuracy. Open the [interactive article](index.html) for the full
+task accuracy. The current production CUDA prefix additionally executes the
+released ResNet-101/FPN, BEV inputs and camera geometry, and the complete
+first-frame six-layer BEVFormer encoder through temporal/spatial attention,
+FFN and three norms, followed by all six TrackFormer decoder layers and their
+reference refinement branches and the final classification/box/history
+output heads and actor activation filtering. Only selected windows pass the
+official PyTorch oracle; continuous-frame temporal equivalence, tracking state
+transitions and decode remain incomplete. Open the
+[interactive article](index.html) for the full
 architecture study, production/tiny contract comparison, and canonical-result
 visualization.

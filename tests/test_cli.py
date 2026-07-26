@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import json, pathlib, subprocess, tempfile
+import json, os, pathlib, subprocess, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-CLI = ROOT / "build" / "uniad"
+CLI = pathlib.Path(os.environ.get("UA_TEST_CLI", ROOT / "build/cpu/uniad"))
 
 with tempfile.TemporaryDirectory() as directory:
     subprocess.run([CLI, "generate-demo", directory], check=True, capture_output=True)
@@ -20,7 +20,11 @@ with tempfile.TemporaryDirectory() as directory:
     assert subprocess.run([CLI, "inspect-model", corrupt], capture_output=True).returncode != 0
 
 p = subprocess.run([CLI, "infer", "--profile", "production"], text=True, capture_output=True)
-assert p.returncode and "metadata-only" in p.stderr
-p = subprocess.run([CLI, "demo", "--backend", "cuda"], text=True, capture_output=True)
-assert p.returncode and "backend unavailable" in p.stderr
+assert p.returncode and "operator graph unavailable" in p.stderr
+if os.environ.get("UA_TEST_CUDA"):
+    subprocess.run([CLI, "demo", "--backend", "cuda"], check=True,
+                   text=True, capture_output=True)
+else:
+    p = subprocess.run([CLI, "demo", "--backend", "cuda"], text=True, capture_output=True)
+    assert p.returncode and "backend unavailable" in p.stderr
 print("cli tests: ok")

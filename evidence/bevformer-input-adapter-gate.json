@@ -1,0 +1,20 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "boundary": "production.bevformer.feat_flatten",
+  "layout": "[camera, concatenated_spatial_token, batch=1, channel]",
+  "physical_shape": [6, 30825, 256],
+  "spatial_shapes": [[116,200],[58,100],[29,50],[15,25]],
+  "level_start_index": [0,23200,29000,30450],
+  "operation": "NCHW flatten/permute plus FP32 camera and level embeddings, stored FP16",
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "camera": 0,
+  "samples_per_level": 32,
+  "levels": [
+    {"level": 0, "passing": 31, "failing": 1, "failure_indices": [29]},
+    {"level": 1, "passing": 27, "failing": 5, "failure_indices": [0,1,11,14,29]},
+    {"level": 2, "passing": 25, "failing": 7, "failure_indices": [0,2,4,12,17,27,31]},
+    {"level": 3, "passing": 29, "failing": 3, "failure_indices": [2,5,11]}
+  ],
+  "strict_pass": false,
+  "disposition": "layout and released embeddings execute; inherited FPN drift prevents equivalence promotion"
+}

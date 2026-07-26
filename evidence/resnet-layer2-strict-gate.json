@@ -1,0 +1,39 @@
+{
+  "schema": "uniad-cuda-boundary-gate-v1",
+  "boundary": "production.resnet_layer2",
+  "checkpoint": "uniad_base_e2e.pth",
+  "input": "six all-zero uint8 BGR 1600x900 views",
+  "output_shape": [6, 512, 116, 200],
+  "sample_count": 32,
+  "oracle": "PyTorch FP32 released checkpoint",
+  "candidate": "scalar FP16 storage, FP32 accumulation CUDA baseline",
+  "tolerance": {"atol": 0.005, "rtol": 0.01},
+  "passing_samples": 3,
+  "failing_samples": 29,
+  "first_failure": {
+    "flat_index": 3,
+    "candidate": 0.018539429,
+    "oracle": 0.004144375,
+    "absolute_error": 0.014395054,
+    "allowed_error": 0.005041444
+  },
+  "strict_pass": false,
+  "localization": {
+    "block0_nonzero_window": {"offset": 197, "sample_count": 32, "strict_pass": true},
+    "block1_nonzero_window": {"offset": 23198, "sample_count": 32, "strict_pass": true},
+    "block2_nonzero_window": {"offset": 797, "sample_count": 32, "strict_pass": true},
+    "block3_nonzero_window": {
+      "offset": 2,
+      "sample_count": 32,
+      "passing_samples": 1,
+      "failing_samples": 31,
+      "strict_pass": false
+    }
+  },
+  "disposition": "executable baseline retained for graph construction; not promoted to graph equivalence",
+  "next_actions": [
+    "diagnose the cancellation and accumulated upstream drift entering layer2 block3",
+    "compare the unchanged stage gate across scalar FP16, selective FP32 storage and SM89 tensor-core policies",
+    "retain downstream graph construction without claiming numerical equivalence"
+  ]
+}
